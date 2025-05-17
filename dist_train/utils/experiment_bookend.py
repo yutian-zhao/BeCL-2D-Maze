@@ -12,6 +12,7 @@ import time
 import shutil
 import json
 import torch
+from datetime import datetime
 
 
 def open_experiment(apply_time_machine=True):
@@ -43,7 +44,7 @@ def open_experiment(apply_time_machine=True):
     assert os.path.isfile(config_path)
     config = json.load(open(config_path))
 
-    exp_name = config_path.split('/')[-1][:-5]
+    exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name) # TODO: add time stamp
 
     print('Experiment directory is: {}'.format(exp_dir), flush=True)
