@@ -65,8 +65,8 @@ def synchronous_worker(rank, config, settings):
         raise ValueError('Could not associate train_type "{}" with any known training manager'.format(train_type))
 
     # Create a manager object for this worker
-    manager = manager_class(rank, config, settings)
+    manager = manager_class(rank, config, settings) # NOTE: baseline.PPO
 
     # Run through however many epochs we're supposed to
-    for _ in range(int(settings.dur)):
+    for _ in range(int(settings.dur)): # NOTE: should be 50
          manager.do_epoch()

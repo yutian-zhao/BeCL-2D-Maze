@@ -44,13 +44,13 @@ def open_experiment(apply_time_machine=True):
     config = json.load(open(config_path))
 
     exp_name = config_path.split('/')[-1][:-5]
-    exp_dir = os.path.join(args.log_dir, exp_name)
+    exp_dir = os.path.join(args.log_dir, exp_name) # TODO: add time stamp
 
     print('Experiment directory is: {}'.format(exp_dir), flush=True)
     model_path = os.path.join(exp_dir, 'model.pth.tar')
     optim_path = os.path.join(exp_dir, 'optim.pth.tar')
 
-    AgentClass = agent_classes(config['agent_type'], config['learner_type'], config['train_type'])
+    AgentClass = agent_classes(config['agent_type'], config['learner_type'], config['train_type']) # NOTE: maze, ContrastiveMI, ppo, -> learners["ContrastiveMI_ppo"]=ContrastiveMILearner # decorated # ppo_decorator.<locals>.NewClass'>
 
     # Create and/or restore the model
     model = AgentClass(**config['agent_params'])
@@ -72,7 +72,7 @@ def open_experiment(apply_time_machine=True):
         print('\nResuming where we left off!\n', flush=True)
         model.load_checkpoint(model_path)
 
-    model.share_memory()
+    model.share_memory() # Q:why share memory here?
 
     shared_optimizer = SharedAdam(model.parameters(), lr=config['learning_rate'])
     if os.path.isfile(optim_path):

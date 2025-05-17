@@ -19,10 +19,10 @@ from dist_train.workers import synchronous_worker
 
 if __name__ == '__main__':
     # Interpret the arguments. Load the shared model/optimizer. Fetch the config file.
-    model, _, config, args = open_experiment(apply_time_machine=True)
+    model, _, config, args = open_experiment(apply_time_machine=False)
 
     print(' ', flush=True)
-    model.reset()
+    model.reset() # NOTE: just return
     print(' ', flush=True)
 
     # Create a group of workers

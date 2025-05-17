@@ -484,7 +484,7 @@ class OnPolicyManager:
         self.agent_model.train_steps += cycle_ep_counter.item()
 
     def do_cycle(self):
-        for _ in range(self.config["updates_per_cycle"]):
+        for _ in range(self.config["updates_per_cycle"]): # Q: None?
             self.update_wrapper()
 
     def init_epoch(self):
@@ -538,7 +538,7 @@ class PPOManager(OnPolicyManager):
             cycle_ep_counter = torch.zeros(1)
             self.rollout_wrapper(cycle_ep_counter)
 
-        if self.config.get("norm_advantage", False):
+        if self.config.get("norm_advantage", False): # Q: True?
             self.agent_model.distributed_advantage_normalization()
 
         for u in range(self.config["update_epochs_per_rollout"]):

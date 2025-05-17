@@ -10,7 +10,7 @@
   "greedy_eval": false,
   "learning_rate": 0.0003,
   "epoch_lr_decay": 1,
-  "agent_params": {
+  "agent_params": {z
     "env_params": {
       "n": 50,
       "maze_type": "square_a",
