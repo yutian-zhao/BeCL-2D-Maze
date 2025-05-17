@@ -12,7 +12,7 @@ skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=torch.tensor([0., -0.5]
 
 
 algo = "contrastive_mi"
-env = "tree_maze_1"
+env = "square_maze"
 
 exp, cmap = load_exp_data("{}/{}".format(env, algo), notebook_mode=False)
 ax = plot_all_skills(exp, cmap, notebook_mode=False,  **skill_kwargs)
