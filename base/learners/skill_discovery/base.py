@@ -69,7 +69,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         return self.im.surprisal(batched_episode)
 
     def _add_im_reward(self):
-        if self.im is not None:
+        if self.im is not None: # NOTE: discriminator
             for ep in self._compress_me:
                 batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
                 with torch.no_grad():

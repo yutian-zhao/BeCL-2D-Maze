@@ -8,6 +8,7 @@ import json
 import time
 import torch
 import numpy as np
+from datetime import datetime
 import torch.distributed as dist
 from dist_train.utils.shared_optim import SharedAdam as Adam
 from dist_train.workers.utils import create_worker_logger, ReplayBuffer
@@ -35,7 +36,7 @@ class BaseOffPolicyManager:
         # self.tag = os.environ.get('EXP_TAG', self.settings.tag)
         # self.exp_dir = os.path.join(BASE_DIR, self.tag)
         config_path = self.settings.config_path
-        exp_name = config_path.split('/')[-1][:-5]
+        exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
         self.exp_dir = os.path.join(self.settings.log_dir, exp_name)
         self.logger = create_worker_logger(rank, self.exp_dir)
 
@@ -347,7 +348,7 @@ class OnPolicyManager:
         # self.tag = os.environ.get('EXP_TAG', self.settings.tag)
         # self.exp_dir = os.path.join(BASE_DIR, self.tag)
         config_path = self.settings.config_path
-        exp_name = config_path.split('/')[-1][:-5]
+        exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
         self.exp_dir = os.path.join(self.settings.log_dir, exp_name)
         self.logger = create_worker_logger(rank, self.exp_dir)
 
@@ -495,7 +496,7 @@ class OnPolicyManager:
 
         self.init_epoch()
 
-        for _ in range(self.config['cycles_per_epoch']):
+        for _ in range(self.config['cycles_per_epoch']): # NOTE: 50
             self.do_cycle()
 
         stats, episodes = self.eval_wrapper()
@@ -512,7 +513,7 @@ class OnPolicyManager:
 
 class PPOManager(OnPolicyManager):
     def do_cycle(self):
-        for _ in range(self.config["rollouts_per_cycle"]):
+        for _ in range(self.config["rollouts_per_cycle"]): # NOTE: 1
             self.update_wrapper()
 
     def update_wrapper(self):
@@ -538,7 +539,7 @@ class PPOManager(OnPolicyManager):
             cycle_ep_counter = torch.zeros(1)
             self.rollout_wrapper(cycle_ep_counter)
 
-        if self.config.get("norm_advantage", False): # Q: True?
+        if self.config.get("norm_advantage", False): # NOTE: True
             self.agent_model.distributed_advantage_normalization()
 
         for u in range(self.config["update_epochs_per_rollout"]):
@@ -558,5 +559,3 @@ class PPOManager(OnPolicyManager):
 
         dist.all_reduce(cycle_ep_counter)
         self.agent_model.train_steps += cycle_ep_counter.item()
-
-

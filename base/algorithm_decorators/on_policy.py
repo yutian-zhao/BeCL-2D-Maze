@@ -21,7 +21,7 @@ def ppo_decorator(partial_agent_class):
                      gae_lambda=0.98,
                      **kwargs):
 
-            if rollouts is None:
+            if rollouts is None: # NOTE: rollouts=50
                 assert horizon is not None
                 assert mini_batch_size is not None
                 self.horizon = int(horizon)
@@ -93,7 +93,7 @@ def ppo_decorator(partial_agent_class):
                 sz = [v.shape[0] for v in self._epoch_transitions.values()][0]
                 n_total = self.n_mini_batches * (sz // self.n_mini_batches)
                 perm_indices = np.random.permutation(sz)[:n_total]
-                mb_indices = np.split(perm_indices, self.n_mini_batches)
+                mb_indices = np.split(perm_indices, self.n_mini_batches) # NOTE: the array will be divide into N equal arrays along axis 0
 
             mini_batches = []
             for indices in mb_indices:
@@ -146,18 +146,18 @@ def ppo_decorator(partial_agent_class):
                 except:
                     None
                 for _ in range(self.rollouts):
-                    self.reset_ep_stats = self.play_episode(*args, **kwargs)
+                    self.reset_ep_stats = self.play_episode(*args, **kwargs) # Q:return function pointer? # NOTE:add self.agent.episode to _compress_me
 
                 # relabel in here 
-                self.relabel_episode()
-                batched_episode = {k: v.detach() for k, v in self.compress_episode().items()}
+                self.relabel_episode() # add intrinsic reward
+                batched_episode = {k: v.detach() for k, v in self.compress_episode().items()} # NOTE: batch_ep
                 self.add_to_mini_buffer(batched_episode)
-            self.fill_epoch_transitions()
+            self.fill_epoch_transitions() # NOTE: from mini_buffer to _epoch_transitions
 
         def _batch_episode(self, ep):
-            batched_episode = {key: torch.stack([e[key] for e in ep]) for key in self.batch_keys}
+            batched_episode = {key: torch.stack([e[key] for e in ep]) for key in self.batch_keys} # NOTE: remove im_reward and env_reward
 
-            batched_episode['value'] = self.get_values(batched_episode)
+            batched_episode['value'] = self.get_values(batched_episode) # NOTE: compute value using v_module
 
             advs = torch.zeros_like(batched_episode['reward'])
             last_adv = 0
@@ -203,9 +203,9 @@ def ppo_decorator(partial_agent_class):
                 keys = self.batch_keys + ['value', 'advantage', 'cumulative_return']
                 batched_ep = {
                     k: torch.cat([b_ep[k] for b_ep in batched_episodes]) for k in keys
-                }
+                } # NOTE: merge multiple eps
 
-            self._batched_ep = batched_ep
+            self._batched_ep = batched_ep 
 
             return batched_ep
 
@@ -213,7 +213,7 @@ def ppo_decorator(partial_agent_class):
             if not self._batched_ep:
                 _ = self.compress_episode()
             if not self._ep_summary:
-                _ = self()
+                _ = self() # Q: repeat calling value function and policy?
             return [float(x) for x in self._ep_summary]
 
         def forward(self, mini_batch=None):
@@ -226,7 +226,7 @@ def ppo_decorator(partial_agent_class):
                 fill_summary = False
                 self.train()
 
-            value = self.get_values(mini_batch)
+            value = self.get_values(mini_batch) # NOTE:2500
             assert value.shape == mini_batch['cumulative_return'].shape
             v_losses = 0.5 * torch.pow(mini_batch['cumulative_return'] - value, 2)
             v_loss = v_losses.mean()
@@ -246,9 +246,9 @@ def ppo_decorator(partial_agent_class):
             loss = v_loss + p_loss + (self.entropy_lambda * e_loss)
 
             if fill_summary:
-                self.fill_summary(mini_batch['reward'].mean(), value.mean(), v_loss, p_loss, e_loss)
+                self.fill_summary(mini_batch['reward'].mean(), value.mean(), v_loss, p_loss, e_loss) # NOTE: add to _ep_summary a list of stats
 
-            self.eval()
+            self.eval() # Q: set eval here? before optim?
 
             return loss
 

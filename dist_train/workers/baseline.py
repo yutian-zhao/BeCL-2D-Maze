@@ -8,6 +8,7 @@ import json
 import time
 import torch
 import numpy as np
+from datetime import datetime
 from dist_train.utils.shared_optim import SharedAdam as Adam
 from dist_train.workers.base import EpisodicOffPolicyManager, OffPolicyManager, OnPolicyManager, PPOManager
 
@@ -151,7 +152,7 @@ class OnPolicy(OnPolicyManager):
         if dense_save:
             dstr = '{:010d}.{}'.format(n_steps, timestamp)
             config_path = self.settings.config_path
-            exp_name = config_path.split('/')[-1][:-5]
+            exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
             exp_dir = os.path.join(self.settings.log_dir, exp_name)
             c_path = os.path.join(exp_dir, dstr + '.json')
             dump_ep = []
@@ -185,6 +186,11 @@ class OnPolicy(OnPolicyManager):
         stats = []
         episodes = {}
         for evi in range(self.config.get('eval_iters', 10)):
+            # try:
+            #     self.agent_model.reset_ep_stats()
+            # except:
+            #     None
+            # self.agent_model.reset_ep_stats = self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
             self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
 
             ep_stats = [float(x) for x in self.agent_model.episode_summary()]
@@ -194,7 +200,7 @@ class OnPolicy(OnPolicyManager):
             for t in self.agent_model.curr_ep:
                 dump_t = {k: np.array(v.detach()).tolist() for k, v in t.items()}
                 dump_ep.append(dump_t)
-            episodes[evi] = dump_ep
+            episodes[evi] = dump_ep # NOTE: copy and tensor to list
 
         return stats, episodes
 
@@ -202,7 +208,7 @@ class OnPolicy(OnPolicyManager):
 class PPO(PPOManager, OnPolicy):
     def rollout_wrapper(self, c_ep_counter):
         st = time.time()
-        self.agent_model.reach_horizon()
+        self.agent_model.reach_horizon() # NOTE: reset stats
         dur = time.time() - st
 
         # Calculate losses to allow dense logging

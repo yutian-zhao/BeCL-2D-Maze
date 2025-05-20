@@ -44,7 +44,7 @@ def open_experiment(apply_time_machine=True):
     assert os.path.isfile(config_path)
     config = json.load(open(config_path))
 
-    exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%d%H%M")
+    exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name) # TODO: add time stamp
 
     print('Experiment directory is: {}'.format(exp_dir), flush=True)
@@ -86,7 +86,7 @@ def open_experiment(apply_time_machine=True):
 
 def close_experiment(model, optimizer, args):
     config_path = args.config_path
-    exp_name = config_path.split('/')[-1][:-5]
+    exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name)
 
     model_path = os.path.join(exp_dir, 'model.pth.tar')

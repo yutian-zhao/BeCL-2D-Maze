@@ -486,6 +486,12 @@ mazes_dict = dict()
 
 mazes_dict['circle'] = {'maze': CircleMaze(), 'action_range': 0.25}
 
+# A     E1    C3
+# A0    E0    C2
+# A1 D0 D1    C1
+# A2          C0
+# A3 B0 B1 B2 B3
+
 segments_a = [
     dict(name='A', anchor='origin', direction='down', times=4),
     dict(name='B', anchor='A3', direction='right', times=4),

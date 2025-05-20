@@ -12,6 +12,7 @@ import shutil
 import argparse
 import numpy as np
 from tqdm import tqdm
+from datetime import datetime
 from result_inspection.toy_maze import load_smm_buffer
 from agents.maze_agents.toy_maze.env.maze_env import Env
 from agents.maze_agents.toy_maze.skill_discovery.edl import VQVAEDiscriminator
@@ -42,7 +43,7 @@ def open_experiment():
     assert os.path.isfile(config_path)
     config = json.load(open(config_path))
 
-    exp_name = config_path.split('/')[-1][:-5]
+    exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name)
 
     print('Experiment directory is: {}'.format(exp_dir), flush=True)

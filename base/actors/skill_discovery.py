@@ -46,10 +46,10 @@ class BaseSkillDiscoveryAgent(BaseActor):
             self.step(do_eval)
 
     def step(self, do_eval=False):
-        s = self.env.state
-        z = self.preprocess_skill(self.curr_skill)
+        s = self.env.state # NOTE: tensor(2,)
+        z = self.preprocess_skill(self.curr_skill) # NOTE: tensor(5)
         a, logit, log_prob, n_ent = self.policy(s.view(1, -1), z.view(1, -1), greedy=do_eval)
-        a = a.view(-1)
+        a = a.view(-1) # NOTE: tensor(2,)
         logit = logit.view(-1)
         log_prob = log_prob.sum()
 
