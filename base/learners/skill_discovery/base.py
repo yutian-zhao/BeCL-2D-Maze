@@ -23,7 +23,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         self._ep_summary = [float(sum([e['reward'] for e in self.agent.episode])),
                             float(sum([e.get('im_reward', 0.) for e in self.agent.episode])),
                             float(sum([e.get('density_model_reward', 0.) for e in self.agent.episode]))]
-        self._ep_summary += [v.item() for v in values]
+        self._ep_summary += [v.item() for v in values] # NOTE Eval stats
 
     def relabel_episode(self):
         # self._compress_me = []

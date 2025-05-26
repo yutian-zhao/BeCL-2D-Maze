@@ -358,10 +358,12 @@ class OnPolicyManager:
 
         # Instantiate a copy of the model and place it on this worker's GPU
         agent_class = agent_classes(self.config['agent_type'], self.config['learner_type'], self.config['train_type'])
-        self.agent_model = agent_class(**self.config['agent_params'])
+        self.agent_model = agent_class(**self.config['agent_params']) # NOTE: ppo_decorate(ContrastiveMILearner(BaseContrastiveMILearner(BaseSkillDiscoveryLearner(BaseLearner))))
 
         if os.path.isfile(self.model_path):
             self.agent_model.load_checkpoint(self.model_path)
+
+        # TODO: move to gpu
 
         for parameter in self.agent_model.state_dict().values():
             dist.broadcast(parameter.data, src=0)
@@ -485,7 +487,7 @@ class OnPolicyManager:
         self.agent_model.train_steps += cycle_ep_counter.item()
 
     def do_cycle(self):
-        for _ in range(self.config["updates_per_cycle"]): # Q: None?
+        for _ in range(self.config["updates_per_cycle"]): # Q: None? do not enter this function
             self.update_wrapper()
 
     def init_epoch(self):

@@ -60,7 +60,7 @@ def ppo_decorator(partial_agent_class):
         def add_to_mini_buffer(self, batched_episode):
             for k, v in batched_episode.items():
                 if self._mini_buffer.get(k, None) is None:
-                    self._mini_buffer[k] = v.detach()
+                    self._mini_buffer[k] = v.detach() # TODO: detach
                 else:
                     self._mini_buffer[k] = torch.cat([self._mini_buffer[k], v], dim=0)
 
@@ -80,10 +80,10 @@ def ppo_decorator(partial_agent_class):
                         self._mini_buffer[k] = None
             else:
                 curr_horizon = int(self.current_horizon)
-                assert curr_horizon >= self.n_mini_batches
+                assert curr_horizon >= self.n_mini_batches # Q: n_mini_batches?
                 self._epoch_transitions = {}
                 for k, v in self._mini_buffer.items():
-                    self._epoch_transitions[k] = v.detach()
+                    self._epoch_transitions[k] = v.detach() # TODO: detach
                     self._mini_buffer[k] = None
 
         def make_epoch_mini_batches(self, normalize_advantage=False):
@@ -178,7 +178,7 @@ def ppo_decorator(partial_agent_class):
                 advs[t] = delta + self.gamma * self.gae_lambda * has_next * last_adv
                 last_adv = advs[t]
 
-            batched_episode['advantage'] = advs.detach()
+            batched_episode['advantage'] = advs.detach() # TODO: detach?
             batched_episode['cumulative_return'] = advs.detach() + batched_episode['value'].detach()
 
             just_one_step = batched_episode['reward'].shape[0] == 1
@@ -219,19 +219,19 @@ def ppo_decorator(partial_agent_class):
         def forward(self, mini_batch=None):
             if mini_batch is None:
                 # We're here to get the stats
-                mini_batch = self._batched_ep
+                mini_batch = self._batched_ep # TODO: to gpu?
                 fill_summary = True
             else:
                 # We're here to compute the
                 fill_summary = False
                 self.train()
 
-            value = self.get_values(mini_batch) # NOTE:2500
+            value = self.get_values(mini_batch) # NOTE:2500 
             assert value.shape == mini_batch['cumulative_return'].shape
             v_losses = 0.5 * torch.pow(mini_batch['cumulative_return'] - value, 2)
             v_loss = v_losses.mean()
 
-            log_prob, n_ent = self.get_policy_lprobs_and_nents(mini_batch)
+            log_prob, n_ent = self.get_policy_lprobs_and_nents(mini_batch) # NOTE: a little bit repeat over act()
             e_loss = n_ent.mean()
 
             # Defining Loss = - J is equivalent to max J
@@ -246,7 +246,7 @@ def ppo_decorator(partial_agent_class):
             loss = v_loss + p_loss + (self.entropy_lambda * e_loss)
 
             if fill_summary:
-                self.fill_summary(mini_batch['reward'].mean(), value.mean(), v_loss, p_loss, e_loss) # NOTE: add to _ep_summary a list of stats
+                self.fill_summary(mini_batch['reward'].mean(), value.mean(), v_loss, p_loss, e_loss) # NOTE: add to _ep_summary a list of stats # TODO: device?
 
             self.eval() # Q: set eval here? before optim?
 

@@ -229,7 +229,7 @@ class BaseLearner(nn.Module):
         try: 
             self._compress_me[0] +=self.agent.episode
         except :
-            self._compress_me.append(self.agent.episode)
+            self._compress_me.append(self.agent.episode) # NOTE: [].append(all steps in the current episode)
         return self._reset_ep_stats
 
     def collect_transitions(self, num_transitions, reset_dict=None, do_eval=False, skip_im_rew=False):
@@ -251,7 +251,7 @@ class BaseLearner(nn.Module):
         if self.im is not None:
             for ep in self._compress_me:
                 batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
-                surprisals = self.im.surprisal(batched_episode)
+                surprisals = self.im.surprisal(batched_episode) # TODO: watch gpu, 
 
                 if self.im_scale:
                     self.train()
@@ -260,7 +260,7 @@ class BaseLearner(nn.Module):
                     surprisals = surprisals / torch.sqrt(self._im_bn.running_var[0])
 
                 for e, s in zip(ep, surprisals):
-                    e['reward'] += (self.im_nu * s.detach())
+                    e['reward'] += (self.im_nu * s.detach()) # TODO: episode detach?
 
     def relabel_batch(self, batch):  # for off-policy methods; we might want to recompute e.g. intrinsic reward
         return batch
@@ -295,7 +295,7 @@ class BaseLearner(nn.Module):
         loss = torch.tensor(0.)
 
         if self.im is not None:
-            loss += (self.im_lambda * self.get_im_loss(mini_batch))
+            loss += (self.im_lambda * self.get_im_loss(mini_batch)) # NOTE: im_lambda=1
 
         if self.density is not None:
             loss += (self.density_lambda * self.get_density_loss(mini_batch))

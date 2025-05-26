@@ -143,7 +143,7 @@ class OnPolicy(OnPolicyManager):
 
     def _log_rollout(self, c_ep_counter, dur, episode_stats):
         c_ep_counter += 1
-        n_steps = int(self.agent_model.train_steps.data.item()) + int(c_ep_counter.item())
+        n_steps = int(self.agent_model.train_steps.data.item()) + int(c_ep_counter.item()) # TODO: Detach?
         timestamp = ''.join('{:017.4f}'.format(time.time()).split('.'))
 
         dense_save = False  # (int(self.time_keeper['n_rounds']) % self.settings.ep_save) == 0 and self.rank == 0
@@ -191,6 +191,7 @@ class OnPolicy(OnPolicyManager):
             # except:
             #     None
             # self.agent_model.reset_ep_stats = self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
+            # TODO: reset stats
             self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
 
             ep_stats = [float(x) for x in self.agent_model.episode_summary()]

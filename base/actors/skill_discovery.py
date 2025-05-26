@@ -18,6 +18,8 @@ class BaseSkillDiscoveryAgent(BaseActor):
         ]
         self.no_squeeze_list = []
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         super().__init__(**kwargs)
 
     def preprocess_skill(self, curr_skill):
@@ -46,6 +48,7 @@ class BaseSkillDiscoveryAgent(BaseActor):
             self.step(do_eval)
 
     def step(self, do_eval=False):
+        # TODO: move to gpu
         s = self.env.state # NOTE: tensor(2,)
         z = self.preprocess_skill(self.curr_skill) # NOTE: tensor(5)
         a, logit, log_prob, n_ent = self.policy(s.view(1, -1), z.view(1, -1), greedy=do_eval)
@@ -64,7 +67,7 @@ class BaseSkillDiscoveryAgent(BaseActor):
 
         self.episode.append({
             'state': s,
-            'skill': self.curr_skill.detach(),
+            'skill': self.curr_skill.detach(), # TODO: detach
             'action': a,
             'action_logit': logit,
             'log_prob': log_prob.view([]),
@@ -72,10 +75,10 @@ class BaseSkillDiscoveryAgent(BaseActor):
             'next_state': s_next,
             'terminal': terminal.view([]),
             'complete': complete.view([]),
-            'env_reward': env_rew.view([]),
+            'env_reward': env_rew.view([]), # NOTE: torch.Size([]) tensor(42)
             'im_reward': discriminator_rew.view([]),  # to be filled during relabeling
             'reward': r.view([]),  # to be filled during relabeling
-        })
+        }) # NOTE: append to episode
 
 
 class BaseSMMAgent(BaseSkillDiscoveryAgent):

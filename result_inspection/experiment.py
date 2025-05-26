@@ -49,6 +49,7 @@ class EvalStats:
                 if epoch not in self.raw_stat_dict:
                     self.raw_stat_dict[epoch] = []
                 self.raw_stat_dict[epoch].append(stat_array)
+        return
 
     @property
     def stat_dict(self):

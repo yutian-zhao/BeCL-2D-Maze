@@ -22,7 +22,7 @@ if __name__ == '__main__':
     model, _, config, args = open_experiment(apply_time_machine=False)
 
     print(' ', flush=True)
-    model.reset() # NOTE: just return
+    model.reset() # NOTE: just return # Q: is this model used, for join?
     print(' ', flush=True)
 
     # Create a group of workers

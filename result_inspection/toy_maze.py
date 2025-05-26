@@ -75,7 +75,7 @@ def _plot_all_skills(exp, cmap, ax=None, reset_dict=None, alpha=1., linewidth=1.
     cclr = sns.color_palette("Spectral",agent.skill_n)
     for skill_idx in range(agent.skill_n):
         # Collect rollout
-        play_episode(agent, skill_idx, do_eval=False, reset_dict=reset_dict)
+        play_episode(agent, skill_idx, do_eval=False, reset_dict=reset_dict) # NOTE: eval again false
         # Plot trajectory    
         ax.plot(*agent.rollout, label="Skill #{}".format(skill_idx), color=cmap(skill_idx) if agent.skill_n <= 20 else cclr[skill_idx], alpha=alpha,
                 linewidth=linewidth, zorder=10)

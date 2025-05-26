@@ -56,7 +56,7 @@ class StochasticPolicy(nn.Module):
 
     def action_stats(self, s, g):
         x = torch.cat([s, g], dim=1) if g is not None else s
-        action_stats = self.layers(x) + 1.05 #+ 1e-6
+        action_stats = self.layers(x) + 1.05 #+ 1e-6 # NOTE: to make mode softplus + 1 > 1
         return action_stats[:, :self.action_size], action_stats[:, self.action_size:]
 
     def scale_action(self, logit):
@@ -75,7 +75,7 @@ class StochasticPolicy(nn.Module):
         """Produce an action"""
         c0, c1 = self.action_stats(s, g)
         action_mode = (c0 - 1) / (c0 + c1 - 2)
-        m = Beta(c0, c1)
+        m = Beta(c0, c1) # NOTE: multi-dim Beta distribution
 
         # Sample.
         if action_logit is None:
