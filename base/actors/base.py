@@ -10,7 +10,7 @@ import numpy as np
 
 
 class BaseActor(nn.Module):
-    def __init__(self, env, noise=None, epsilon=None, **module_kwargs):
+    def __init__(self, env, noise=None, epsilon=None, device=None, **module_kwargs):
         super().__init__()
         self.noise = max(0.0, float(noise)) if noise is not None else noise
         self.epsilon = max(0.0, min(1.0, float(epsilon))) if epsilon is not None else epsilon
@@ -19,6 +19,9 @@ class BaseActor(nn.Module):
         self._make_modules(**module_kwargs)
 
         self.episode = []
+
+        # CHANGE: make device NOTE: not graceful: will not change even after calling ".to"
+        self.device = device if device else torch.device('cpu')
 
     def _make_modules(self, **module_kwargs):
         raise NotImplementedError

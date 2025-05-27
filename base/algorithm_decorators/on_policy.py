@@ -60,12 +60,13 @@ def ppo_decorator(partial_agent_class):
         def add_to_mini_buffer(self, batched_episode):
             for k, v in batched_episode.items():
                 if self._mini_buffer.get(k, None) is None:
-                    self._mini_buffer[k] = v.detach() # TODO: detach
+                    self._mini_buffer[k] = v.detach()
                 else:
                     self._mini_buffer[k] = torch.cat([self._mini_buffer[k], v], dim=0)
 
             curr_horizon = int(self.current_horizon)
-            assert all([int(v.shape[0]) == curr_horizon for v in self._mini_buffer.values()])
+            # CHANGE: avoid cleared key
+            assert all([int(v.shape[0]) == curr_horizon for v in self._mini_buffer.values() if v is not None])
 
         def fill_epoch_transitions(self):
             if self.horizon is not None:
@@ -83,8 +84,9 @@ def ppo_decorator(partial_agent_class):
                 assert curr_horizon >= self.n_mini_batches # Q: n_mini_batches?
                 self._epoch_transitions = {}
                 for k, v in self._mini_buffer.items():
-                    self._epoch_transitions[k] = v.detach() # TODO: detach
-                    self._mini_buffer[k] = None
+                    self._epoch_transitions[k] = v.detach() # if v is not None else None # CHANGE: possible none 
+                    # self._mini_buffer[k] = None
+                self._mini_buffer = {'state': None}
 
         def make_epoch_mini_batches(self, normalize_advantage=False):
             if self.horizon is not None:
@@ -114,8 +116,8 @@ def ppo_decorator(partial_agent_class):
             a_sumsq = torch.pow(a, 2).sum(dim=0)
             dist.all_reduce(a_sum)
             dist.all_reduce(a_sumsq)
-
-            n = a.shape[0] * torch.ones(1)
+            # CHANGE: to device
+            n = a.shape[0] * torch.ones(1, device=a.device)
             dist.all_reduce(n)
             # n = dist.get_world_size() * self.horizon
 
@@ -131,7 +133,7 @@ def ppo_decorator(partial_agent_class):
             else:
                 raise NotImplementedError
 
-        def reach_horizon(self, *args, **kwargs):
+        def reach_horizon(self, relabel=True, *args, **kwargs):
             # Play until a certain number of transitions have been reached
             if self.horizon is not None:
                 while self.current_horizon < self.horizon:
@@ -148,10 +150,19 @@ def ppo_decorator(partial_agent_class):
                 for _ in range(self.rollouts):
                     self.reset_ep_stats = self.play_episode(*args, **kwargs) # Q:return function pointer? # NOTE:add self.agent.episode to _compress_me
 
+                # CHANGE: avoid relabeling
+                if relabel:
                 # relabel in here 
-                self.relabel_episode() # add intrinsic reward
-                batched_episode = {k: v.detach() for k, v in self.compress_episode().items()} # NOTE: batch_ep
-                self.add_to_mini_buffer(batched_episode)
+                    self.relabel_episode() # add intrinsic reward
+                    batched_episode = {k: v.detach() for k, v in self.compress_episode().items()} # NOTE: batch_ep
+                    self.add_to_mini_buffer(batched_episode)
+                else:
+                    assert len(self._compress_me) == 1
+                    batched_episode = {"next_state": torch.stack([dct["next_state"] for dct in self._compress_me[0]])}
+                    batched_episode["state"] = torch.stack([dct["state"] for dct in self._compress_me[0]])
+                    batched_episode["skill"] = torch.stack([dct["skill"] for dct in self._compress_me[0]])
+                    self._batched_ep = batched_episode
+                    self.add_to_mini_buffer(batched_episode)
             self.fill_epoch_transitions() # NOTE: from mini_buffer to _epoch_transitions
 
         def _batch_episode(self, ep):
@@ -178,7 +189,7 @@ def ppo_decorator(partial_agent_class):
                 advs[t] = delta + self.gamma * self.gae_lambda * has_next * last_adv
                 last_adv = advs[t]
 
-            batched_episode['advantage'] = advs.detach() # TODO: detach?
+            batched_episode['advantage'] = advs.detach()
             batched_episode['cumulative_return'] = advs.detach() + batched_episode['value'].detach()
 
             just_one_step = batched_episode['reward'].shape[0] == 1
@@ -206,6 +217,8 @@ def ppo_decorator(partial_agent_class):
                 } # NOTE: merge multiple eps
 
             self._batched_ep = batched_ep 
+            # NOTE: self._batched_ep = [('state', torch.Size([2500, 2])), ('next_state', torch.Size([2500, 2])), ('skill', torch.Size([2500])), ('action', torch.Size([2500, 2])), ('n_ent', torch.Size([2500])), ('log_prob', torch.Size([2500])), ('action_logit', torch.Size([2500, 2])), ('reward', torch.Size([2500])), ('terminal', torch.Size([2500])), ('complete', torch.Size([2500])), ('value', torch.Size([2500])), ('advantage', torch.Size([2500])), ('cumulative_return', torch.Size([2500]))] 
+            # NOTE: self._compress_me[0] = [dict(eps)]
 
             return batched_ep
 
@@ -219,7 +232,7 @@ def ppo_decorator(partial_agent_class):
         def forward(self, mini_batch=None):
             if mini_batch is None:
                 # We're here to get the stats
-                mini_batch = self._batched_ep # TODO: to gpu?
+                mini_batch = self._batched_ep
                 fill_summary = True
             else:
                 # We're here to compute the
@@ -246,7 +259,7 @@ def ppo_decorator(partial_agent_class):
             loss = v_loss + p_loss + (self.entropy_lambda * e_loss)
 
             if fill_summary:
-                self.fill_summary(mini_batch['reward'].mean(), value.mean(), v_loss, p_loss, e_loss) # NOTE: add to _ep_summary a list of stats # TODO: device?
+                self.fill_summary(mini_batch['reward'].mean(), value.mean(), v_loss, p_loss, e_loss) # NOTE: add to _ep_summary a list of stats 
 
             self.eval() # Q: set eval here? before optim?
 

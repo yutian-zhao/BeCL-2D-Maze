@@ -39,14 +39,15 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         return torch.exp(-self.compute_info_nce_loss(x, batch['skill'])).squeeze()
     
     def compute_info_nce_loss(self, features, labels):
+        # CHANGE: to device
         # label positives samples
 
-        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).long() # (b, b) # NOTE: if the label the same matrix
+        labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).long().to(features.device) # (b, b) # NOTE: if the label the same matrix
         features = F.normalize(features, dim=1) # (b, c)
         similarity_matrix = torch.matmul(features, features.T) # (b, b)
 
         # discard the main diagonal from both: labels and similarities matrix
-        mask = torch.eye(labels.shape[0], dtype=torch.bool) # (b, b)
+        mask = torch.eye(labels.shape[0], dtype=torch.bool, device=features.device) # (b, b)
         labels = labels[~mask].view(labels.shape[0], -1) # (b, b - 1) # you use labels below, no need?
         similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1) # (b, b - 1)
 

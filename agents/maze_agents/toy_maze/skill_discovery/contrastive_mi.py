@@ -13,15 +13,14 @@ from base.learners.skill_discovery.contrastive_mi import BaseContrastiveMILearne
 
 
 class ContrastiveMILearner(BaseContrastiveMILearner):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    # CHANGE: to device
     # NOTE: create env and make agent/actor
     def create_env(self):
         return Env(**self.env_params)
 
     def _make_agent(self):
         return StochasticAgent(skill_n=self.skill_n, env=self.create_env(), policy=self.policy,
-                               skill_embedding=self.skill_emb).to(self.device)
+                               skill_embedding=self.skill_emb, device=self.device).to(self.device)
 
     def _make_agent_modules(self):
         self._make_skill_embedding()
@@ -31,7 +30,7 @@ class ContrastiveMILearner(BaseContrastiveMILearner):
         self.v_module = Value(use_antigoal=False, **kwargs).to(self.device)
 
     def _make_skill_embedding(self):
-        self.skill_emb = OneHotEmbedding(self.skill_n).to(self.device)
+        self.skill_emb = OneHotEmbedding(self.skill_n).to(self.device) # NOTE: Did not use module
 
     def _make_im_modules(self):
         return Discriminator(self.skill_n, self._dummy_env.state_size,

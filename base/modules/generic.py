@@ -15,7 +15,7 @@ class OneHotEmbedding(nn.Module):
         self.num_classes = num_classes
 
     def forward(self, x):
-        return torch.eye(self.num_classes, requires_grad=False)[x]
+        return torch.eye(self.num_classes, requires_grad=False, device=x.device)[x]
 
 
 class CategoricalWithoutReplacement:

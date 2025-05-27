@@ -18,8 +18,6 @@ class BaseSkillDiscoveryAgent(BaseActor):
         ]
         self.no_squeeze_list = []
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
         super().__init__(**kwargs)
 
     def preprocess_skill(self, curr_skill):
@@ -48,26 +46,27 @@ class BaseSkillDiscoveryAgent(BaseActor):
             self.step(do_eval)
 
     def step(self, do_eval=False):
-        # TODO: move to gpu
-        s = self.env.state # NOTE: tensor(2,)
-        z = self.preprocess_skill(self.curr_skill) # NOTE: tensor(5)
+        # CHANGE: to device
+        s = self.env.state.to(self.device) # NOTE: tensor(2,)
+        self.curr_skill = self.curr_skill.to(self.device)
+        z = self.preprocess_skill(self.curr_skill).to(self.device) # NOTE: tensor(5)
         a, logit, log_prob, n_ent = self.policy(s.view(1, -1), z.view(1, -1), greedy=do_eval)
         a = a.view(-1) # NOTE: tensor(2,)
         logit = logit.view(-1)
         log_prob = log_prob.sum()
 
-        self.env.step(a)
+        self.env.step(a.cpu())
         complete = self.env.is_complete if hasattr(self.env, 'is_complete') else self.env.is_success
-        complete = float(complete) * torch.ones(1)
-        terminal = float(self.env.is_done) * torch.ones(1)
-        s_next = self.env.state
-        r = torch.zeros(1)
-        env_rew = self.env.reward * torch.ones(1)
-        discriminator_rew = torch.zeros(1)
+        complete = float(complete) * torch.ones(1, device=self.device)
+        terminal = float(self.env.is_done) * torch.ones(1, device=self.device)
+        s_next = self.env.state.to(self.device)
+        r = torch.zeros(1, device=self.device)
+        env_rew = self.env.reward.to(self.device)
+        discriminator_rew = torch.zeros(1, device=self.device)
 
         self.episode.append({
             'state': s,
-            'skill': self.curr_skill.detach(), # TODO: detach
+            'skill': self.curr_skill.detach(),
             'action': a,
             'action_logit': logit,
             'log_prob': log_prob.view([]),

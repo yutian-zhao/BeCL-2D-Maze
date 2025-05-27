@@ -143,7 +143,7 @@ class OnPolicy(OnPolicyManager):
 
     def _log_rollout(self, c_ep_counter, dur, episode_stats):
         c_ep_counter += 1
-        n_steps = int(self.agent_model.train_steps.data.item()) + int(c_ep_counter.item()) # TODO: Detach?
+        n_steps = int(self.agent_model.train_steps.data.item()) + int(c_ep_counter.item())
         timestamp = ''.join('{:017.4f}'.format(time.time()).split('.'))
 
         dense_save = False  # (int(self.time_keeper['n_rounds']) % self.settings.ep_save) == 0 and self.rank == 0
@@ -199,7 +199,7 @@ class OnPolicy(OnPolicyManager):
 
             dump_ep = []
             for t in self.agent_model.curr_ep:
-                dump_t = {k: np.array(v.detach()).tolist() for k, v in t.items()}
+                dump_t = {k: np.array(v.detach().cpu()).tolist() for k, v in t.items()}
                 dump_ep.append(dump_t)
             episodes[evi] = dump_ep # NOTE: copy and tensor to list
 
@@ -207,15 +207,16 @@ class OnPolicy(OnPolicyManager):
 
 
 class PPO(PPOManager, OnPolicy):
-    def rollout_wrapper(self, c_ep_counter):
+    def rollout_wrapper(self, c_ep_counter, relabel=True):
         st = time.time()
-        self.agent_model.reach_horizon() # NOTE: reset stats
+        self.agent_model.reach_horizon(relabel=relabel) # NOTE: reset stats
         dur = time.time() - st
+        # CHANGE: avoid relabeling
+        if relabel:
+            # Calculate losses to allow dense logging
+            episode_stats = self.agent_model.episode_summary()
 
-        # Calculate losses to allow dense logging
-        episode_stats = self.agent_model.episode_summary()
-
-        self._log_rollout(c_ep_counter, dur, episode_stats)
+            self._log_rollout(c_ep_counter, dur, episode_stats)
 
 
 class HierarchicalPPO(PPO):

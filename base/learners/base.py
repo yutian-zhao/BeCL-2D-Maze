@@ -20,6 +20,9 @@ class BaseLearner(nn.Module):
                  ):
         super().__init__()
 
+        # CHANGE: make device
+        self.device = torch.device("cpu") # torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         self.gamma = float(gamma)
         assert 0 < self.gamma <= 1.0
 
@@ -251,7 +254,7 @@ class BaseLearner(nn.Module):
         if self.im is not None:
             for ep in self._compress_me:
                 batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
-                surprisals = self.im.surprisal(batched_episode) # TODO: watch gpu, 
+                surprisals = self.im.surprisal(batched_episode) 
 
                 if self.im_scale:
                     self.train()
@@ -260,7 +263,7 @@ class BaseLearner(nn.Module):
                     surprisals = surprisals / torch.sqrt(self._im_bn.running_var[0])
 
                 for e, s in zip(ep, surprisals):
-                    e['reward'] += (self.im_nu * s.detach()) # TODO: episode detach?
+                    e['reward'] += (self.im_nu * s.detach())
 
     def relabel_batch(self, batch):  # for off-policy methods; we might want to recompute e.g. intrinsic reward
         return batch
@@ -291,8 +294,8 @@ class BaseLearner(nn.Module):
     ###### FORWARD PASS FOR AUXILIARY MODULES (IM, DENSITY) ######
     def forward_aux(self, mini_batch):
         self.train()
-
-        loss = torch.tensor(0.)
+        # CHANGE: to device
+        loss = torch.tensor(0.).to(self.device)
 
         if self.im is not None:
             loss += (self.im_lambda * self.get_im_loss(mini_batch)) # NOTE: im_lambda=1

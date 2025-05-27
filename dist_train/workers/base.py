@@ -363,8 +363,6 @@ class OnPolicyManager:
         if os.path.isfile(self.model_path):
             self.agent_model.load_checkpoint(self.model_path)
 
-        # TODO: move to gpu
-
         for parameter in self.agent_model.state_dict().values():
             dist.broadcast(parameter.data, src=0)
 
@@ -521,7 +519,7 @@ class PPOManager(OnPolicyManager):
     def update_wrapper(self):
         cycle_ep_counter = torch.zeros(1)
 
-        self.rollout_wrapper(cycle_ep_counter)
+        self.rollout_wrapper(cycle_ep_counter, relabel=False)
 
         if self.aux_optim is not None:
             for u in range(self.config["update_epochs_per_rollout"]):
