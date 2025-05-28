@@ -14,6 +14,9 @@ from dist_train.utils.shared_optim import SharedAdam as Adam
 from dist_train.workers.utils import create_worker_logger, ReplayBuffer
 from agents import agent_classes
 
+from result_inspection.toy_maze import plot_all_skills
+import matplotlib.pyplot as plt
+
 
 def _save_buffer(exp_dir, curr_epoch, replay_buffer):
     """ Replay buffer saving logic, which is the same for most managers. """
@@ -36,8 +39,8 @@ class BaseOffPolicyManager:
         # self.tag = os.environ.get('EXP_TAG', self.settings.tag)
         # self.exp_dir = os.path.join(BASE_DIR, self.tag)
         config_path = self.settings.config_path
-        exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
-        self.exp_dir = os.path.join(self.settings.log_dir, exp_name)
+        # exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
+        self.exp_dir = os.path.join(self.settings.log_dir, self.settings.exp_name) # CHANGE: add timestep
         self.logger = create_worker_logger(rank, self.exp_dir)
 
         self.model_path = os.path.join(self.exp_dir, 'model.pth.tar')
@@ -348,8 +351,8 @@ class OnPolicyManager:
         # self.tag = os.environ.get('EXP_TAG', self.settings.tag)
         # self.exp_dir = os.path.join(BASE_DIR, self.tag)
         config_path = self.settings.config_path
-        exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
-        self.exp_dir = os.path.join(self.settings.log_dir, exp_name)
+        # exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
+        self.exp_dir = os.path.join(self.settings.log_dir, self.settings.exp_name) # CHANGE: add timestep
         self.logger = create_worker_logger(rank, self.exp_dir)
 
         self.model_path = os.path.join(self.exp_dir, 'model.pth.tar')
@@ -501,6 +504,14 @@ class OnPolicyManager:
 
         stats, episodes = self.eval_wrapper()
         self.log_eval_results(stats, episodes)
+
+        # CHANGE: plot when eval
+        if self.curr_epoch%3 == 1:
+            skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=torch.tensor([0., -0.5])))
+            cmap = plt.get_cmap('tab20')
+            ax = plot_all_skills(None, cmap, notebook_mode=False, agent=self.agent_model.agent, **skill_kwargs)  # NOTE: sample 20 trajs for each skill
+            plt.savefig(os.path.join(self.exp_dir, f'epoch_{self.curr_epoch}.png'))
+
 
         if self.rank == 0:
             self.checkpoint()

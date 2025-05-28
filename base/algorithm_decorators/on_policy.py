@@ -63,12 +63,12 @@ def ppo_decorator(partial_agent_class):
                     self._mini_buffer[k] = v.detach()
                 else:
                     self._mini_buffer[k] = torch.cat([self._mini_buffer[k], v], dim=0)
-
+                    
             curr_horizon = int(self.current_horizon)
-            # CHANGE: avoid cleared key
-            assert all([int(v.shape[0]) == curr_horizon for v in self._mini_buffer.values() if v is not None])
+            # CHANGE: avoid cleared key  if v is not None
+            assert all([int(v.shape[0]) == curr_horizon for v in self._mini_buffer.values()])
 
-        def fill_epoch_transitions(self):
+        def fill_epoch_transitions(self, relabel=True):
             if self.horizon is not None:
                 curr_horizon = int(self.current_horizon)
                 assert curr_horizon >= self.horizon
@@ -84,8 +84,11 @@ def ppo_decorator(partial_agent_class):
                 assert curr_horizon >= self.n_mini_batches # Q: n_mini_batches?
                 self._epoch_transitions = {}
                 for k, v in self._mini_buffer.items():
-                    self._epoch_transitions[k] = v.detach() # if v is not None else None # CHANGE: possible none 
-                    # self._mini_buffer[k] = None
+                    self._epoch_transitions[k] = v.detach() # if v is not None else None # CHANGE: possible none
+                    # CHANGE: relabel 
+                #     if relabel:
+                #         self._mini_buffer[k] = None
+                # if not relabel:
                 self._mini_buffer = {'state': None}
 
         def make_epoch_mini_batches(self, normalize_advantage=False):
@@ -163,7 +166,7 @@ def ppo_decorator(partial_agent_class):
                     batched_episode["skill"] = torch.stack([dct["skill"] for dct in self._compress_me[0]])
                     self._batched_ep = batched_episode
                     self.add_to_mini_buffer(batched_episode)
-            self.fill_epoch_transitions() # NOTE: from mini_buffer to _epoch_transitions
+            self.fill_epoch_transitions(relabel=relabel) # NOTE: from mini_buffer to _epoch_transitions
 
         def _batch_episode(self, ep):
             batched_episode = {key: torch.stack([e[key] for e in ep]) for key in self.batch_keys} # NOTE: remove im_reward and env_reward

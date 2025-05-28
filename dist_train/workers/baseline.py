@@ -152,9 +152,9 @@ class OnPolicy(OnPolicyManager):
         if dense_save:
             dstr = '{:010d}.{}'.format(n_steps, timestamp)
             config_path = self.settings.config_path
-            exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
-            exp_dir = os.path.join(self.settings.log_dir, exp_name)
-            c_path = os.path.join(exp_dir, dstr + '.json')
+            # exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
+            # exp_dir = os.path.join(self.settings.log_dir, exp_name)
+            c_path = os.path.join(self.exp_dir, dstr + '.json') # CHANGE
             dump_ep = []
             for t in self.agent_model.curr_ep:
                 dump_t = {k: np.array(v.detach()).tolist() for k, v in t.items()}
@@ -186,13 +186,13 @@ class OnPolicy(OnPolicyManager):
         stats = []
         episodes = {}
         for evi in range(self.config.get('eval_iters', 10)):
-            # try:
-            #     self.agent_model.reset_ep_stats()
-            # except:
-            #     None
-            # self.agent_model.reset_ep_stats = self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
-            # TODO: reset stats
-            self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
+            try:
+                self.agent_model.reset_ep_stats()
+            except:
+                None
+            self.agent_model.reset_ep_stats = self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
+            # CHANGE: reset stats
+            # self.agent_model.play_episode(do_eval=bool(self.config.get('greedy_eval', True)))
 
             ep_stats = [float(x) for x in self.agent_model.episode_summary()]
             stats.append(ep_stats)

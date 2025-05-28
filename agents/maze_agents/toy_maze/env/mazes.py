@@ -25,8 +25,8 @@ class CircleMaze:
     def plot(self, ax=None):
         if ax is None:
             _, ax = plt.subplots(1, 1, figsize=(5, 4))
-        if ax is None:
-            _, ax = plt.subplots(1, 1, figsize=(5, 4))
+        # if ax is None:
+        #     _, ax = plt.subplots(1, 1, figsize=(5, 4))
         rads = np.linspace(self.stop_t * 2 * np.pi, (1 - self.stop_t) * 2 * np.pi)
         xs_i = (1 - self.ring_r) * np.cos(rads)
         ys_i = (1 - self.ring_r) * np.sin(rads)

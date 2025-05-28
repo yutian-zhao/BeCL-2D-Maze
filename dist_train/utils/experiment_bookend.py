@@ -46,6 +46,7 @@ def open_experiment(apply_time_machine=True):
 
     exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name) # CHANGE: add time stamp
+    args.exp_name = exp_name
 
     print('Experiment directory is: {}'.format(exp_dir), flush=True)
     model_path = os.path.join(exp_dir, 'model.pth.tar')
@@ -88,6 +89,7 @@ def close_experiment(model, optimizer, args):
     config_path = args.config_path
     exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name)
+    args.exp_name = exp_name
 
     model_path = os.path.join(exp_dir, 'model.pth.tar')
     optim_path = os.path.join(exp_dir, 'optim.pth.tar')

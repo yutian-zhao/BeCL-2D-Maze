@@ -55,18 +55,26 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         similarity_matrix -= torch.max(similarity_matrix, 1)[0][:, None] # NOTE: ([2500, 1])
         similarity_matrix = torch.exp(similarity_matrix)
 
-        another_positive = features.view(-1, self.traj_length_each_episode, self.n)[:, self.traj_length_each_episode-1, :].view(-1, self.n) # NOTE: choose the last step in each eps as the positve  # (50, 15)
-        feature_dim = features.shape[-1]
-        another_positive = another_positive.flatten()   # (feature_dim * goal_num)
-        another_positive = another_positive.expand(50, -1)        #(50, feature_dim * goal_num) # NOTE: 50 env.n
-        another_positive = another_positive.reshape(another_positive.shape[0], -1, feature_dim)        # (50, goal_num, feature_dim)
-        another_positive = another_positive.permute(1,0,2)      # (goal_num, 50, feature_dim) # NOTE: goal_num is the num of trajs
-        another_positive = another_positive.reshape(-1,feature_dim)    #(50 * goal_num (b), feature_dim) # NOTE: (goal1_feature*50||)
+        # another_positive = features.view(-1, self.traj_length_each_episode, self.n)[:, self.traj_length_each_episode-1, :].view(-1, self.n) # NOTE: (not ganranteed) choose the last step in each eps as the positve  # (goal_num, feature_dim) # self.n is num_skill
+        # feature_dim = features.shape[-1]
+        # another_positive = another_positive.flatten()   # (feature_dim * goal_num)
+        # another_positive = another_positive.expand(50, -1)   # NOTE: should be self.traj_length_each_episode,     #(50, feature_dim * goal_num) # NOTE: 50 env.n
+        # another_positive = another_positive.reshape(another_positive.shape[0], -1, feature_dim)        # (50, goal_num, feature_dim)
+        # another_positive = another_positive.permute(1,0,2)      # (goal_num, 50, feature_dim) # NOTE: goal_num is the num of trajs
+        # another_positive = another_positive.reshape(-1,feature_dim)    #(50 * goal_num (b), feature_dim) # NOTE: (goal1_feature*50||)
         
 
-        positives = torch.sum(torch.exp(features * another_positive), dim=-1, keepdim=True) # Q: goal*goal
-        negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True) # Q: negative set megatitude changes? 
+        # positives = torch.sum(torch.exp(features * another_positive), dim=-1, keepdim=True) # NOTE: should be dot product Q: goal*goal
+        # negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True) # Q: negative set megatitude changes? 
 
+        # eps = torch.as_tensor(1e-6)
+        # loss = -torch.log(positives / (negatives + eps) + eps) # Q: positive?
+        pick_one_positive_sample_idx = torch.argmax(labels, dim=-1, keepdim=True)
+        pick_one_positive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_positive_sample_idx, 1)
+        
+        positives = torch.sum(similarity_matrix * pick_one_positive_sample_idx, dim=-1, keepdim=True) #(b,1)
+        negatives = torch.sum(similarity_matrix, dim=-1, keepdim=True)  #(b,1)
         eps = torch.as_tensor(1e-6)
-        loss = -torch.log(positives / (negatives + eps) + eps) # Q: positive?
+        loss = -torch.log(positives / (negatives + eps) + eps) #(b,1)
+
         return loss

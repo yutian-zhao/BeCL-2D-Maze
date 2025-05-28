@@ -45,6 +45,7 @@ def open_experiment():
 
     exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name)
+    args.exp_name = exp_name
 
     print('Experiment directory is: {}'.format(exp_dir), flush=True)
 
