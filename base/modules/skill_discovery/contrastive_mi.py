@@ -36,7 +36,7 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         for layer in self.layers:
             x = layer(x)
 
-        return torch.exp(-self.compute_surprisal(x, batch['skill'])).squeeze()
+        return torch.exp(-self.loss(x, batch['skill'])).squeeze()
     
     def compute_info_nce_loss(self, features, labels):
         # CHANGE: to device
@@ -55,29 +55,30 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         similarity_matrix -= torch.max(similarity_matrix, 1)[0][:, None] # NOTE: ([2500, 1])
         similarity_matrix = torch.exp(similarity_matrix)
 
-        another_positive = features.view(-1, self.traj_length_each_episode, self.n)[:, self.traj_length_each_episode-1, :].view(-1, self.n) # NOTE: (not ganranteed) choose the last step in each eps as the positve  # (goal_num, feature_dim) # self.n is num_skill
-        feature_dim = features.shape[-1]
-        another_positive = another_positive.flatten()   # (feature_dim * goal_num)
-        another_positive = another_positive.expand(self.traj_length_each_episode, -1)   # NOTE: should be self.traj_length_each_episode,     #(50, feature_dim * goal_num) # NOTE: 50 env.n
-        another_positive = another_positive.reshape(another_positive.shape[0], -1, feature_dim)        # (50, goal_num, feature_dim)
-        another_positive = another_positive.permute(1,0,2)      # (goal_num, 50, feature_dim) # NOTE: goal_num is the num of trajs
-        another_positive = another_positive.reshape(-1,feature_dim)    #(50 * goal_num (b), feature_dim) # NOTE: (goal1_feature*50||)
+        # another_positive = features.view(-1, self.traj_length_each_episode, self.n)[:, self.traj_length_each_episode-1, :].view(-1, self.n) # NOTE: (not ganranteed) choose the last step in each eps as the positve  # (goal_num, feature_dim) # self.n is num_skill
+        # feature_dim = features.shape[-1]
+        # another_positive = another_positive.flatten()   # (feature_dim * goal_num)
+        # another_positive = another_positive.expand(self.traj_length_each_episode, -1)   # NOTE: should be self.traj_length_each_episode,     #(50, feature_dim * goal_num) # NOTE: 50 env.n
+        # another_positive = another_positive.reshape(another_positive.shape[0], -1, feature_dim)        # (50, goal_num, feature_dim)
+        # another_positive = another_positive.permute(1,0,2)      # (goal_num, 50, feature_dim) # NOTE: goal_num is the num of trajs
+        # another_positive = another_positive.reshape(-1,feature_dim)    #(50 * goal_num (b), feature_dim) # NOTE: (goal1_feature*50||)
         
 
-        positives = torch.sum(torch.exp(features * another_positive), dim=-1, keepdim=True) # NOTE: should be dot product Q: goal*goal
-        negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True) # Q: negative set megatitude changes? 
+        # positives = torch.sum(torch.exp(features * another_positive), dim=-1, keepdim=True) # NOTE: should be dot product Q: goal*goal
+        # negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True) # Q: negative set megatitude changes? 
 
-        eps = torch.as_tensor(1e-6)
-        loss = -torch.log(positives / (negatives + eps) + eps) # Q: positive?
-
-        # # CHANGE: fix info nce computation
-        # pick_one_positive_sample_idx = torch.argmax(labels, dim=-1, keepdim=True)
-        # pick_one_positive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_positive_sample_idx, 1)
-        
-        # positives = torch.sum(similarity_matrix * pick_one_positive_sample_idx, dim=-1, keepdim=True) #(b,1)
-        # negatives = torch.sum(similarity_matrix, dim=-1, keepdim=True)  #(b,1)
         # eps = torch.as_tensor(1e-6)
-        # loss = -torch.log(positives / (negatives + eps) + eps) #(b,1)
+        # loss = -torch.log(positives / (negatives + eps) + eps) # Q: positive?
+
+        # CHANGE: fix info nce computation
+        random_max = labels*(1+torch.rand_like(labels, dtype=torch.float)) # .float()
+        pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
+        pick_one_positive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_positive_sample_idx, 1)
+        
+        positives = torch.sum(similarity_matrix * pick_one_positive_sample_idx, dim=-1, keepdim=True) #(b,1)
+        negatives = torch.sum(similarity_matrix, dim=-1, keepdim=True)  #(b,1)
+        eps = torch.as_tensor(1e-6)
+        loss = -torch.log(positives / (negatives + eps) + eps) #(b,1)
 
         return loss
     
@@ -130,47 +131,3 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
 
         return loss
 
-# def compute_info_nce_loss_copy(self, features, labels):
-#         # label positives samples
-
-#         labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).long() # (b, b)
-#         features = F.normalize(features, dim=1) # (b, c)
-#         similarity_matrix = torch.matmul(features, features.T) # (b, b)
-
-#         # discard the main diagonal from both: labels and similarities matrix
-#         mask = torch.eye(labels.shape[0], dtype=torch.bool) # (b, b)
-#         labels = labels[~mask].view(labels.shape[0], -1) # (b, b - 1)
-#         similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1) # (b, b - 1)
-
-#         similarity_matrix = similarity_matrix / self.temperature
-#         similarity_matrix -= torch.max(similarity_matrix, 1)[0][:, None]
-#         similarity_matrix = torch.exp(similarity_matrix)
-
-#         # NOTE: GUESS: choose the last state in each epsode as the positive
-#         # HOWEVER, when training aux (not when computing intrinsic reward), the order of data are totally permuted
-#         another_positive = features.view(-1, self.traj_length_each_episode, self.n)[:, self.traj_length_each_episode-1, :].view(-1, self.n)
-#         feature_dim = features.shape[-1]
-#         another_positive = another_positive.flatten()   # (feature_dim * goal_num)
-#         another_positive = another_positive.expand(50, -1)        #(50, feature_dim * goal_num)
-#         # NOTE: 50 Should be self.traj_length_each_episode
-#         another_positive = another_positive.reshape(another_positive.shape[0], -1, feature_dim)        # (50, goal_num, feature_dim)
-#         another_positive = another_positive.permute(1,0,2)      # (goal_num, 50, feature_dim)
-#         another_positive = another_positive.reshape(-1,feature_dim)    #(50 * goal_num (b), feature_dim)
-        
-#         # NOTE: This does not follow the standard InfoNCE form because:
-
-#         # It computes features * another_positive (element-wise multiplication),
-
-#         # Then applies torch.exp(...),
-
-#         # Then it sums across the feature dimension
-#         # The order is different and not divide it by the temperature 
-#         positives = torch.sum(torch.exp(features * another_positive), dim=-1, keepdim=True) 
-        
-#         negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True) 
-
-#         eps = torch.as_tensor(1e-6)
-#         # NOTE: the denominator doesn't include the positive pair 
-#         loss = -torch.log(positives / (negatives + eps) + eps)
-#         # HOWEVER, the result is the best following this implementation
-#         return loss

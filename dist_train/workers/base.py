@@ -15,6 +15,7 @@ from dist_train.workers.utils import create_worker_logger, ReplayBuffer
 from agents import agent_classes
 
 from result_inspection.toy_maze import plot_all_skills
+import matplotlib.pyplot as plt 
 
 
 def _save_buffer(exp_dir, curr_epoch, replay_buffer):
