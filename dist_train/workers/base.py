@@ -15,7 +15,6 @@ from dist_train.workers.utils import create_worker_logger, ReplayBuffer
 from agents import agent_classes
 
 from result_inspection.toy_maze import plot_all_skills
-import matplotlib.pyplot as plt
 
 
 def _save_buffer(exp_dir, curr_epoch, replay_buffer):
@@ -506,7 +505,8 @@ class OnPolicyManager:
         self.log_eval_results(stats, episodes)
 
         # CHANGE: plot when eval
-        if self.curr_epoch%3 == 1:
+        if self.rank == 0:
+            # from result_inspection.toy_maze import plot_all_skills
             skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=torch.tensor([0., -0.5])))
             cmap = plt.get_cmap('tab20')
             ax = plot_all_skills(None, cmap, notebook_mode=False, agent=self.agent_model.agent, **skill_kwargs)  # NOTE: sample 20 trajs for each skill

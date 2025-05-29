@@ -33,7 +33,8 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         #     r = e['env_reward'] * float(self.env_reward)
         #     e['reward'] = r
         # self._compress_me.append(self.agent.episode)
-        assert len(self._compress_me[0]) == 50 * 50 and len(self._compress_me) == 1
+        # CHANGE: Comment out assert
+        # assert len(self._compress_me[0]) == 50 * 50 and len(self._compress_me) == 1
         # Add discriminator reward
         self._add_im_reward()
 

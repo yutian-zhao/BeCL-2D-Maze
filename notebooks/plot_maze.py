@@ -18,4 +18,4 @@ exp, cmap = load_exp_data(
     "{}/{}".format(env, algo), notebook_mode=False
 )  # NOTE: load agent, eval stats and episodes
 ax = plot_all_skills(exp, cmap, notebook_mode=False, **skill_kwargs)  # NOTE: sample 20 trajs for each skill
-plt.savefig("../MI-result/images/"+algo+"_"+env+'.png', dpi=300)
+plt.savefig("../MI-result/images/"+algo+"_"+env+'.png') # CHANGE: , dpi=300
