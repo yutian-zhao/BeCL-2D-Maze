@@ -84,15 +84,16 @@ class StochasticPolicy(nn.Module):
             else:
                 action_logit = m.sample()
 
-            n_ent = -m.entropy().mean()
-            lprobs = m.log_prob(action_logit)
+            # CHANGE: add back the log determinant of the Jacobian of the transform after change of variable
+            n_ent = -m.entropy().mean() + torch.log(torch.tensor(2.0, device=c1.device))
+            lprobs = m.log_prob(action_logit) - torch.log(torch.tensor(2.0, device=c1.device))
             action = self.scale_action(action_logit)
             return action, action_logit, lprobs, n_ent
 
         # Evaluate the action previously taken
         else:
-            n_ent = -m.entropy().mean(dim=1)
-            lprobs = m.log_prob(action_logit)
+            n_ent = -m.entropy().mean(dim=1) + torch.log(torch.tensor(2.0, device=c1.device))
+            lprobs = m.log_prob(action_logit) - torch.log(torch.tensor(2.0, device=c1.device))
             action = self.scale_action(action_logit)
             return lprobs, n_ent, action
 

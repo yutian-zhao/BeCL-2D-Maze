@@ -76,9 +76,12 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         pick_one_positive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_positive_sample_idx, 1)
         
         positives = torch.sum(similarity_matrix * pick_one_positive_sample_idx, dim=-1, keepdim=True) #(b,1)
-        negatives = torch.sum(similarity_matrix, dim=-1, keepdim=True)  #(b,1)
+        # negatives = torch.sum(similarity_matrix, dim=-1, keepdim=True)  #(b,1)
+        negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True)  #(b,1)
+        # CHANGE: Discard all positives and add back picked one
         eps = torch.as_tensor(1e-6)
-        loss = -torch.log(positives / (negatives + eps) + eps) #(b,1)
+        # loss = -torch.log(positives / (negatives + eps) + eps) #(b,1)
+        loss = -torch.log(positives / (positives + negatives + eps) + eps) #(b,1)
 
         return loss
     
