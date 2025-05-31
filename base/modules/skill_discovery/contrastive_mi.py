@@ -38,18 +38,23 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
 
         return torch.exp(-self.loss(x, batch['skill'])).squeeze()
     
-    def compute_info_nce_loss(self, features, labels):
+    def compute_info_nce_loss(self, features, labels, positives=None, return_positives=False):
         # CHANGE: to device
         # label positives samples
 
         labels = (labels.unsqueeze(0) == labels.unsqueeze(1)).long().to(features.device) # (b, b) # NOTE: if the label the same matrix
         features = F.normalize(features, dim=1) # (b, c)
         similarity_matrix = torch.matmul(features, features.T) # (b, b)
+        # CHANGE: select terminal state
+        if_terminal = torch.zeros_like(labels)
+        if_terminal[:,[torch.arange(self.traj_length_each_episode-1, if_terminal.shape[1], self.traj_length_each_episode)]] = 1
+        if_terminal = if_terminal.long()
 
         # discard the main diagonal from both: labels and similarities matrix
         mask = torch.eye(labels.shape[0], dtype=torch.bool, device=features.device) # (b, b)
         labels = labels[~mask].view(labels.shape[0], -1) # (b, b - 1) # you use labels below, no need?
         similarity_matrix = similarity_matrix[~mask].view(similarity_matrix.shape[0], -1) # (b, b - 1)
+        if_terminal = if_terminal[~mask].view(labels.shape[0], -1)
 
         similarity_matrix = similarity_matrix / self.temperature
         similarity_matrix -= torch.max(similarity_matrix, 1)[0][:, None] # NOTE: ([2500, 1])
@@ -71,7 +76,8 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         # loss = -torch.log(positives / (negatives + eps) + eps) # Q: positive?
 
         # CHANGE: fix info nce computation
-        random_max = labels*(1+torch.rand_like(labels, dtype=torch.float)) # .float()
+        # random_max = labels*(1+torch.rand_like(labels, dtype=torch.float)) # .float()
+        random_max = (labels*if_terminal)*(1+torch.rand_like(labels, dtype=torch.float)) # .float()
         pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
         pick_one_positive_sample_idx = torch.zeros_like(labels).scatter_(-1, pick_one_positive_sample_idx, 1)
         

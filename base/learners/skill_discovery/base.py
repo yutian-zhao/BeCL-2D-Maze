@@ -33,7 +33,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         #     r = e['env_reward'] * float(self.env_reward)
         #     e['reward'] = r
         # self._compress_me.append(self.agent.episode)
-        
+
         # CHANGE: Comment out assert
         # assert len(self._compress_me[0]) == 50 * 50 and len(self._compress_me) == 1
         # Add discriminator reward
@@ -76,7 +76,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
                 batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
                 with torch.no_grad():
                     surprisals = self._compute_surprisal(batched_episode)
-
+                torch.arange()
                 if self.im_scale:
                     self.train()
                     _ = self._im_bn(surprisals.view(-1, 1))
