@@ -149,7 +149,7 @@ class Env:
 
     def reset(self, state=None, goal=None, antigoal=None):
         if state is None or self._ignore_reset_start:
-            s_xy = self.to_tensor(self.maze.sample_start())
+            s_xy = self.to_tensor(self.maze.sample_random_start()) # sample_start()) #  # CHANGE: random start
         else:
             s_xy = self.to_tensor(state)
         if goal is None:

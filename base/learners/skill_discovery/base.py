@@ -69,14 +69,65 @@ class BaseSkillDiscoveryLearner(BaseLearner):
 
     def _compute_surprisal(self, batched_episode):
         return self.im.surprisal(batched_episode)
+    
+    def sample_positives(self, batched_episode, mode):
+        if mode=='gs+': # need special treatmeet because otherwise g has no positive
+            pick_one_positive_sample_idx = (torch.arange(batched_episode['next_state'].size(0))//50+1)*50-1
+            batched_episode['positive'] = batched_episode['next_state'][pick_one_positive_sample_idx]
+            return batched_episode
+        
+        else:
+            labels = batched_episode['skill']
+            labels = (labels.unsqueeze(0) == labels.unsqueeze(1))
+            
+            diag = torch.eye(labels.shape[0], dtype=torch.bool) # (b, b)
+            labels[diag] = 0
+
+            g_mask = torch.zeros_like(labels, dtype=bool)
+            g_mask[:,torch.arange(self.agent.env.n-1, labels.shape[1], self.agent.env.n, dtype=int)] = True
+            # other s
+            s_mask = torch.arange(labels.shape[0], dtype=int)
+            s_mask = s_mask // self.agent.env.n
+            other_s_mask = s_mask.unsqueeze(0) != s_mask.unsqueeze(1)
+            s_mask = s_mask.unsqueeze(0) == s_mask.unsqueeze(1)
+            
+            if 'g' in mode:
+                labels *= g_mask
+            if 's+' in mode:
+                labels *= s_mask
+            if 's-' in mode:
+                labels *= other_s_mask
+
+            labels = labels.long()
+            # row_has_nonzero = candidate_mask.any(dim=1)
+            # assert row_has_nonzero.all(), "Some rows have no non-zero elements"
+            random_max = (labels)*(1+torch.rand_like(labels, dtype=torch.float))
+            pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1)
+            batched_episode['positive'] = batched_episode['next_state'][pick_one_positive_sample_idx]
+
+            return batched_episode
+        
+    def add_positives(self):
+        for ep in self._compress_me:
+            batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
+            # CHANGE: sample positives beforehand -> S_g or random s or other s_g
+            batched_episode = self.sample_positives(batched_episode, mode="s-")
+
+            assert len(ep) == len(batched_episode['positive'])
+
+            for e, pos in zip(ep, batched_episode['positive']):
+                e['positive'] = pos
 
     def _add_im_reward(self):
         if self.im is not None: # NOTE: discriminator
             for ep in self._compress_me:
                 batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
+                # CHANGE: sample positives beforehand -> S_g or random s or other s_g
+                # batched_episode = self.sample_positives(batched_episode, mode="s-")
+                
                 with torch.no_grad():
                     surprisals = self._compute_surprisal(batched_episode)
-                torch.arange()
+                
                 if self.im_scale:
                     self.train()
                     _ = self._im_bn(surprisals.view(-1, 1))

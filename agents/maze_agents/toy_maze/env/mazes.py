@@ -268,6 +268,22 @@ class Maze:
         shift = np.random.uniform(low=-0.5, high=0.5, size=(2,))
         loc = square_loc + shift
         return loc[0], loc[1]
+    
+    def sample_random_start(self):
+        min_wall_dist = 0.05
+
+        segment_keys = list(self._segments.keys())
+        square_id = segment_keys[np.random.randint(low=0, high=len(segment_keys))]
+        square_loc = self._segments[square_id]['loc']
+
+        while True:
+            shift = np.random.uniform(low=-0.5, high=0.5, size=(2,))
+            loc = square_loc + shift
+            dist_checker = np.array([min_wall_dist, min_wall_dist]) * np.sign(shift)
+            stopped_loc = self.move(loc, dist_checker)
+            if float(np.sum(np.abs((loc + dist_checker) - stopped_loc))) == 0.0:
+                break
+        return loc[0], loc[1]
 
     def sample_start(self):
         min_wall_dist = 0.05

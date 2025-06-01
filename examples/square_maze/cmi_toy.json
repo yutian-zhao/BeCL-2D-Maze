@@ -22,7 +22,7 @@
     "entropy_lambda": 0.025,
     "normalize_inputs": false,
     "env_reward": false,
-    "rollouts": 3,
+    "rollouts": 4,
     "n_mini_batches": 2,
     "hidden_size": 128,
     "num_layers": 3,

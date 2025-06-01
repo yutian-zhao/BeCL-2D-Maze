@@ -154,6 +154,7 @@ def ppo_decorator(partial_agent_class):
                     self.reset_ep_stats = self.play_episode(*args, **kwargs) # Q:return function pointer? # NOTE:add self.agent.episode to _compress_me
 
                 # CHANGE: avoid relabeling
+                self.add_positives()
                 if relabel:
                 # relabel in here 
                     self.relabel_episode() # add intrinsic reward
@@ -164,12 +165,17 @@ def ppo_decorator(partial_agent_class):
                     batched_episode = {"next_state": torch.stack([dct["next_state"] for dct in self._compress_me[0]])}
                     batched_episode["state"] = torch.stack([dct["state"] for dct in self._compress_me[0]])
                     batched_episode["skill"] = torch.stack([dct["skill"] for dct in self._compress_me[0]])
+                    if 'positive' in self._compress_me[0][0].keys():
+                        batched_episode["positive"] = torch.stack([dct["positive"] for dct in self._compress_me[0]])
                     self._batched_ep = batched_episode
                     self.add_to_mini_buffer(batched_episode)
             self.fill_epoch_transitions(relabel=relabel) # NOTE: from mini_buffer to _epoch_transitions
 
         def _batch_episode(self, ep):
-            batched_episode = {key: torch.stack([e[key] for e in ep]) for key in self.batch_keys} # NOTE: remove im_reward and env_reward
+            keys = self.batch_keys
+            if 'positive' in ep[0].keys():
+                keys = self.batch_keys + ['positive']
+            batched_episode = {key: torch.stack([e[key] for e in ep]) for key in keys} # NOTE: remove im_reward and env_reward
 
             batched_episode['value'] = self.get_values(batched_episode) # NOTE: compute value using v_module
 
@@ -215,6 +221,9 @@ def ppo_decorator(partial_agent_class):
 
             else:
                 keys = self.batch_keys + ['value', 'advantage', 'cumulative_return']
+                # CHANGE: add positive if any
+                if 'positive' in batched_episodes[0].keys():
+                    keys.append('positive')
                 batched_ep = {
                     k: torch.cat([b_ep[k] for b_ep in batched_episodes]) for k in keys
                 } # NOTE: merge multiple eps

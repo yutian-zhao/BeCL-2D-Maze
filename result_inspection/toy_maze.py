@@ -15,7 +15,7 @@ from agents.maze_agents.toy_maze.skill_discovery.edl import VQVAEDiscriminator
 import seaborn as sns
 import numpy as np 
 
-NUM_TRAJECTORIES = 20
+NUM_TRAJECTORIES = 10
 TRAJECTORY_KWARGS = dict(alpha=0.2, linewidth=2)
 
 SAVEFIG_KWARGS = dict(bbox_inches='tight', transparent=True)

@@ -6,6 +6,8 @@
 import torch
 from base.modules.generic import CategoricalWithoutReplacement
 from base.actors.skill_discovery import BaseSkillDiscoveryAgent
+# CHANGE: Use cycle instead of random samping
+from itertools import cycle
 
 
 class StochasticAgent(BaseSkillDiscoveryAgent):
@@ -15,6 +17,7 @@ class StochasticAgent(BaseSkillDiscoveryAgent):
         super().__init__(**kwargs)
 
         self.skill_dist = CategoricalWithoutReplacement(self.skill_n)
+        self.skills = cycle(torch.arange(self.skill_n).detach())
 
     def _make_modules(self, policy, skill_embedding):
         self.policy = policy
@@ -25,7 +28,8 @@ class StochasticAgent(BaseSkillDiscoveryAgent):
         return self.skill_embedding(curr_skill)
 
     def sample_skill(self):
-        return self.skill_dist.sample(sample_shape=(1,)).view([])
+        # return self.skill_dist.sample(sample_shape=(1,)).view([])
+        return next(self.skills)
 
     @property
     def rollout(self):
