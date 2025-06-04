@@ -11,11 +11,14 @@ plot_kwargs = dict(stat_list=['cumulative_rew'], labels=['Reward'], figsize=(6, 
 skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=torch.tensor([0., -0.5])))
 
 
-algo = "contrastive_mi"
+algo = "contrastive_mi_06012143"
 env = "square_maze"
 
 exp, cmap = load_exp_data(
     "{}/{}".format(env, algo), notebook_mode=False
 )  # NOTE: load agent, eval stats and episodes
-ax = plot_all_skills(exp, cmap, notebook_mode=False, **skill_kwargs)  # NOTE: sample 20 trajs for each skill
-plt.savefig("../MI-result/images/"+algo+"_"+env+'.png') # CHANGE: , dpi=300
+# ax = plot_all_skills(exp, cmap, notebook_mode=False, **skill_kwargs)  # NOTE: sample 20 trajs for each skill
+# plt.savefig("../MI-result/images/"+algo+"_"+env+'.png') # CHANGE: , dpi=300
+# axes = exp.plot_all()
+plot_stats_by_name(exp)
+plt.savefig("../MI-result/images/"+algo+"_"+env+"_stats"+'.png')

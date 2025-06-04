@@ -98,6 +98,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
             if 's-' in mode:
                 labels *= other_s_mask
 
+            # default is random across all states with the same label 
             labels = labels.long()
             # row_has_nonzero = candidate_mask.any(dim=1)
             # assert row_has_nonzero.all(), "Some rows have no non-zero elements"

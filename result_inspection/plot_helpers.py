@@ -2,8 +2,11 @@ import math
 import matplotlib.pyplot as plt
 
 
-def plot_stats_by_name(exp, stat_list, labels=None, ncols=4, figsize=(5, 3), titlesize=12):
-    assert len(stat_list) > 0
+def plot_stats_by_name(exp, stat_list=None, labels=None, ncols=4, figsize=(5, 3), titlesize=12):
+    # assert len(stat_list) > 0
+    # CHANGE
+    if not stat_list:
+        stat_list = exp.summary_keys
     for stat_name in stat_list:
         assert stat_name in exp.summary_keys, "{} is not a valid stat key".format(stat_name)
 

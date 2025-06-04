@@ -69,7 +69,7 @@ class EvalStats:
         y = self.averages[:, stat_idx]
         x = np.arange(len(y)) + 1
         ax.plot(x, y, 'o-')
-        ax.grid(b=True)
+        ax.grid(True)
         return ax
 
     def plot_all(self, axes=None):
@@ -81,7 +81,7 @@ class EvalStats:
             y = self.averages[:, i]
             x = np.arange(len(y)) + 1
             ax.plot(x, y, 'o-')
-            ax.grid(b=True)
+            ax.grid(visible=True) # (b=True) # CHANGE: Maybe for old version
         return axes
 
 
