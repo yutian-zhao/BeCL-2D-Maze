@@ -6,6 +6,9 @@
 import torch.distributed as dist
 from dist_train.workers import baseline
 import numpy as np 
+import torch
+import random
+
 episodic_off_policy_manager_lookup = {
     'baseline': baseline.EpisodicOffPolicy,
     'hierarchical': baseline.HierarchicalEpisodicOffPolicy
@@ -50,6 +53,15 @@ def synchronous_worker(rank, config, settings):
             rank=rank,
             world_size=settings.N
         ) 
+
+    if 'seed' in config.keys():
+        seed = config['seed']
+        print(f"Set random seed to {seed}")
+        torch.manual_seed(seed)
+        if config.get('device', None) == 'cuda' and torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+        np.random.seed(seed)
+        random.seed(seed)
 
     print('Rank {:02d} worker successfully initiated the distributed process group!'.format(rank), flush=True)
 

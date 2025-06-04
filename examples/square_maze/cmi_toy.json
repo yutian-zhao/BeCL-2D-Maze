@@ -2,6 +2,8 @@
   "learner_type": "ContrastiveMI",
   "agent_type": "maze",
   "train_type": "ppo",
+  "device": "cpu",
+  "seed": 1,
   "norm_advantage": true,
   "cycles_per_epoch": 50,
   "rollouts_per_cycle": 1,
@@ -14,8 +16,11 @@
     "env_params": {
       "n": 2,
       "maze_type": "square_a",
-      "done_on_success": false
+      "done_on_success": false,
+      "random_start": false
     },
+    "device": "cuda",
+    "mode": "gs+",
     "skill_n": 2,
     "gamma": 0.99,
     "gae_lambda": 0.98,
@@ -30,7 +35,8 @@
       "nu": 1,
       "lambda": 1,
       "model_params": {
-        "traj_length_each_episode": 2
+        "traj_length_each_episode": 2,
+        "temperature": 0.8
       }
     }
   }

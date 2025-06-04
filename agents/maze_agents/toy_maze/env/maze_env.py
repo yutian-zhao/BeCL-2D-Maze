@@ -10,7 +10,7 @@ from agents.maze_agents.toy_maze.env.mazes import mazes_dict, make_crazy_maze, m
 
 class Env:
     def __init__(self, n=None, maze_type=None, use_antigoal=True, ddiff=False, ignore_reset_start=False,
-                 done_on_success=True):
+                 done_on_success=True, random_start=False):
         self.n = n
 
         self._mazes = mazes_dict
@@ -18,6 +18,7 @@ class Env:
 
         self._ignore_reset_start = bool(ignore_reset_start)
         self._done_on_success = bool(done_on_success)
+        self.random_start = bool(random_start)
 
         # Generate a crazy maze specified by its size and generation seed
         if self.maze_type.startswith('crazy'):
@@ -149,7 +150,10 @@ class Env:
 
     def reset(self, state=None, goal=None, antigoal=None):
         if state is None or self._ignore_reset_start:
-            s_xy = self.to_tensor(self.maze.sample_random_start()) # sample_start()) #  # CHANGE: random start
+            if self.random_start:
+                s_xy = self.to_tensor(self.maze.sample_random_start()) # sample_start()) #  # CHANGE: random start
+            else:
+                s_xy = self.to_tensor(self.maze.sample_start())
         else:
             s_xy = self.to_tensor(state)
         if goal is None:

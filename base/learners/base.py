@@ -11,17 +11,19 @@ from base.modules.intrinsic_motivation import IntrinsicMotivationModule
 
 class BaseLearner(nn.Module):
     AGENT_TYPE = 'Base'
+    # CHANGE: add device
     def __init__(self,
                  gamma=0.99,
                  env_params=None,
                  im_params=None,
                  density_params=None,
-                 bootstrap_from_early_terminal=True
+                 bootstrap_from_early_terminal=True,
+                 device=None,
                  ):
         super().__init__()
 
         # CHANGE: make device
-        self.device = torch.device("cpu") # torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda" if device is not None and torch.cuda.is_available() else "cpu")
 
         self.gamma = float(gamma)
         assert 0 < self.gamma <= 1.0

@@ -112,7 +112,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         for ep in self._compress_me:
             batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
             # CHANGE: sample positives beforehand -> S_g or random s or other s_g
-            batched_episode = self.sample_positives(batched_episode, mode="s-")
+            batched_episode = self.sample_positives(batched_episode, mode=self.mode)
 
             assert len(ep) == len(batched_episode['positive'])
 

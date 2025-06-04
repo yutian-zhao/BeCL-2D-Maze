@@ -19,6 +19,7 @@ def ppo_decorator(partial_agent_class):
                      rollouts=None, n_mini_batches=None,
                      entropy_lambda=0.0,
                      gae_lambda=0.98,
+                     mode=None,
                      **kwargs):
 
             if rollouts is None: # NOTE: rollouts=50
@@ -40,6 +41,7 @@ def ppo_decorator(partial_agent_class):
             self.clip_range = clip_range
             self.entropy_lambda = float(entropy_lambda)
             self.gae_lambda = float(gae_lambda)
+            self.mode = mode # CHANGE: add mode
 
             self._mini_buffer = {'state': None}
             self._epoch_transitions = {}
@@ -154,7 +156,8 @@ def ppo_decorator(partial_agent_class):
                     self.reset_ep_stats = self.play_episode(*args, **kwargs) # Q:return function pointer? # NOTE:add self.agent.episode to _compress_me
 
                 # CHANGE: avoid relabeling
-                self.add_positives()
+                if self.mode:
+                    self.add_positives()
                 if relabel:
                 # relabel in here 
                     self.relabel_episode() # add intrinsic reward
