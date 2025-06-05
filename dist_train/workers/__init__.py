@@ -95,3 +95,5 @@ def synchronous_worker(rank, config, settings):
     # Run through however many epochs we're supposed to
     for _ in range(int(settings.dur)): # NOTE: should be 50
          manager.do_epoch()
+
+    manager.stats_logger.run.finish()

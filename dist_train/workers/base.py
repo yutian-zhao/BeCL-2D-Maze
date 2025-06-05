@@ -11,11 +11,13 @@ import numpy as np
 from datetime import datetime
 import torch.distributed as dist
 from dist_train.utils.shared_optim import SharedAdam as Adam
-from dist_train.workers.utils import create_worker_logger, ReplayBuffer
+from dist_train.workers.utils import create_worker_logger, ReplayBuffer, Logger
 from agents import agent_classes
 
 # from result_inspection.toy_maze import plot_all_skills
 import matplotlib.pyplot as plt 
+from pathlib import Path
+import wandb
 
 
 def _save_buffer(exp_dir, curr_epoch, replay_buffer):
@@ -354,7 +356,11 @@ class OnPolicyManager:
         # exp_name = config_path.split("/")[-1][:-5] + "_" + datetime.now().strftime("%m%d%H%M")
         self.exp_dir = os.path.join(self.settings.log_dir, self.settings.exp_name) # CHANGE: add timestep
         self.logger = create_worker_logger(rank, self.exp_dir)
-
+        # CHANGE: add another logger
+        # WARNING: do not take care of multi-processing
+        self.stats_logger = Logger(rank, Path(self.exp_dir), config["use_tb"], config["use_wandb"])
+        self.update_counter = 0
+        
         self.model_path = os.path.join(self.exp_dir, 'model.pth.tar')
         self.optim_path = os.path.join(self.exp_dir, 'optim.pth.tar')
         self.aux_optim_path = os.path.join(self.exp_dir, 'aux_optim.pth.tar')
@@ -391,6 +397,9 @@ class OnPolicyManager:
         self.curr_epoch = 0
 
         self.eval_stats = {}
+
+        if bool(config["use_wandb"]):
+            self.stats_logger.run.watch(self.agent_model)
 
     @staticmethod
     def condense_loss(loss_):
@@ -548,6 +557,7 @@ class PPOManager(OnPolicyManager):
                             p.grad.data /= dist.get_world_size()
                     # _ = clip_grad_norm_(self.agent_model.parameters(), max_norm=0.5)
                     self.aux_optim.step()
+                    self.stats_logger.log('train/contrastive_loss', loss.item(), self.update_counter)
             # We collect new data with reward coming from the updated density model. This is slower (but easier to
             # implement) than relabeling previous samples. Note that we only count the rollouts used for updating the
             # policy when reporting data efficiency.
@@ -560,7 +570,7 @@ class PPOManager(OnPolicyManager):
         for u in range(self.config["update_epochs_per_rollout"]):
             for mini_batch in self.agent_model.make_epoch_mini_batches(normalize_advantage=False):
                 self.optim.zero_grad()
-                loss = self.agent_model(mini_batch)
+                loss, metrics = self.agent_model(mini_batch, return_stats=True)
                 loss.backward()
                 for p in self.agent_model.parameters():
                     if p.grad is not None:
@@ -568,9 +578,13 @@ class PPOManager(OnPolicyManager):
                         p.grad.data /= dist.get_world_size()
                 # _ = clip_grad_norm_(self.agent_model.parameters(), max_norm=0.5)
                 self.optim.step()
+                self.stats_logger.log_metrics(metrics, self.update_counter, 'train')
 
         for v in self.agent_model.state_dict().values():
             dist.broadcast(v.data, src=0)
 
         dist.all_reduce(cycle_ep_counter)
         self.agent_model.train_steps += cycle_ep_counter.item()
+
+        self.stats_logger.dump(self.update_counter, 'train')
+        self.update_counter += 1

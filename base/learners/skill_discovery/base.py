@@ -20,6 +20,7 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         self.ep_summary_keys = ["cumulative_rew", "cumulative_im_rew", "cumulative_density_rew"]
 
     def fill_summary(self, *values):
+        # TODO: in first play_episode, episodes are added to _compress_me, which the following doesn't follow
         self._ep_summary = [float(sum([e['reward'] for e in self.agent.episode])),
                             float(sum([e.get('im_reward', 0.) for e in self.agent.episode])),
                             float(sum([e.get('density_model_reward', 0.) for e in self.agent.episode]))]

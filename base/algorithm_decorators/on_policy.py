@@ -245,7 +245,8 @@ def ppo_decorator(partial_agent_class):
                 _ = self() # Q: repeat calling value function and policy?
             return [float(x) for x in self._ep_summary]
 
-        def forward(self, mini_batch=None):
+        def forward(self, mini_batch=None, return_stats=False):
+            # CHANGE: return stats for logging
             if mini_batch is None:
                 # We're here to get the stats
                 mini_batch = self._batched_ep
@@ -279,6 +280,15 @@ def ppo_decorator(partial_agent_class):
 
             self.eval() # Q: set eval here? before optim?
 
+            if return_stats:
+                return loss, {'agent_loss': loss.item(), 
+                        'intr_reward': mini_batch['reward'].mean().item(),
+                        'value_func': value.mean().item(),
+                        'v_loss': v_loss.item(),
+                        'p_loss': p_loss.item(),
+                        'e_loss': e_loss.item(),
+                        'log_prob': log_prob.mean().item()}
+            
             return loss
 
     return NewClass

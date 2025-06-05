@@ -3,6 +3,8 @@
   "agent_type": "maze",
   "train_type": "ppo",
   "seed": 1,
+  "use_wandb": false,
+  "use_tb": false,
   "norm_advantage": true,
   "cycles_per_epoch": 50,
   "rollouts_per_cycle": 1,
