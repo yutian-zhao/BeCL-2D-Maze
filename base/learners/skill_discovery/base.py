@@ -73,7 +73,8 @@ class BaseSkillDiscoveryLearner(BaseLearner):
     def sample_positives(self, batched_episode, mode):
         # sample positive from batched episodes
         # mode: 
-        # default: filter out states with  different labels
+        # mode should be in ['gs-', 'gs+', 'g', 's+', 's-', 's']
+        # s:(default) filter out states with  different labels
         # g: filter out non-terminal state
         # s+: filter out from the different trajectory/episode
         # s-: filter out states from the same trajectory/episode

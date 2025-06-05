@@ -156,8 +156,8 @@ def ppo_decorator(partial_agent_class):
                     self.reset_ep_stats = self.play_episode(*args, **kwargs) # Q:return function pointer? # NOTE:add self.agent.episode to _compress_me
 
                 # CHANGE: avoid relabeling
-                if self.mode: # ""
-                    assert self.mode in ['gs-', 'gs+', 'g', 's+', 's-']
+                if self.mode: # default is ""
+                    assert self.mode in ['gs-', 'gs+', 'g', 's+', 's-', 's']
                     self.add_positives()
                 if relabel:
                 # relabel in here d
