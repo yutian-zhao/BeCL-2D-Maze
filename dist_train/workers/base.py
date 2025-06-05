@@ -14,7 +14,7 @@ from dist_train.utils.shared_optim import SharedAdam as Adam
 from dist_train.workers.utils import create_worker_logger, ReplayBuffer
 from agents import agent_classes
 
-from result_inspection.toy_maze import plot_all_skills
+# from result_inspection.toy_maze import plot_all_skills
 import matplotlib.pyplot as plt 
 
 
@@ -503,11 +503,11 @@ class OnPolicyManager:
             self.do_cycle()
 
         stats, episodes = self.eval_wrapper()
-        self.log_eval_results(stats, episodes)
+        self.log_eval_results(stats, episodes) # NOTE: save stats and eps
 
         # CHANGE: plot when eval
         if self.rank == 0 and self.curr_epoch%2 == 1:
-            # from result_inspection.toy_maze import plot_all_skills
+            from result_inspection.toy_maze import plot_all_skills
             start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5]]
             start_state = torch.tensor(start_state)
             for i, s in enumerate(start_state):

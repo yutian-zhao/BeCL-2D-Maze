@@ -71,7 +71,13 @@ class BaseSkillDiscoveryLearner(BaseLearner):
         return self.im.surprisal(batched_episode)
     
     def sample_positives(self, batched_episode, mode):
-        if mode=='gs+': # need special treatmeet because otherwise g has no positive
+        # sample positive from batched episodes
+        # mode: 
+        # default: filter out states with  different labels
+        # g: filter out non-terminal state
+        # s+: filter out from the different trajectory/episode
+        # s-: filter out states from the same trajectory/episode
+        if mode=='gs+': # need special treatmeet because otherwise g has no corresponding positive
             pick_one_positive_sample_idx = (torch.arange(batched_episode['next_state'].size(0))//50+1)*50-1
             batched_episode['positive'] = batched_episode['next_state'][pick_one_positive_sample_idx]
             return batched_episode
@@ -111,7 +117,6 @@ class BaseSkillDiscoveryLearner(BaseLearner):
     def add_positives(self):
         for ep in self._compress_me:
             batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
-            # CHANGE: sample positives beforehand -> S_g or random s or other s_g
             batched_episode = self.sample_positives(batched_episode, mode=self.mode)
 
             assert len(ep) == len(batched_episode['positive'])

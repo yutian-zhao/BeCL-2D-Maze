@@ -6,7 +6,7 @@
 import torch
 from base.modules.generic import CategoricalWithoutReplacement
 from base.actors.skill_discovery import BaseSkillDiscoveryAgent
-# CHANGE: Use cycle instead of random samping
+# CHANGE: Use cycle instead of random samping to ensure all skills are sampled at least once
 from itertools import cycle
 
 
@@ -33,7 +33,8 @@ class StochasticAgent(BaseSkillDiscoveryAgent):
 
     @property
     def rollout(self):
-        states = torch.stack([e['state'] for e in self.episode] + [self.episode[-1]['next_state']]).data.numpy()
+        # CHANGE: to device
+        states = torch.stack([e['state'] for e in self.episode] + [self.episode[-1]['next_state']]).cpu().data.numpy()
         xs = states[:, 0]
         ys = states[:, 1]
         return [xs, ys]

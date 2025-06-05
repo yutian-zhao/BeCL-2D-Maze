@@ -23,7 +23,17 @@ class BaseLearner(nn.Module):
         super().__init__()
 
         # CHANGE: make device
-        self.device = torch.device("cuda" if device is not None and torch.cuda.is_available() else "cpu")
+        if device is not None:
+            if device == 'cuda':
+                if torch.cuda.is_available():
+                    self.device = torch.device('cuda')
+                else:
+                    print("cuda is not available. Use cpu instead.")
+                    self.device = torch.device('cpu')
+            else:
+                self.device = torch.device(device)
+        else:
+            self.device = torch.device('cpu')
 
         self.gamma = float(gamma)
         assert 0 < self.gamma <= 1.0

@@ -35,7 +35,7 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
             for layer in self.layers:
                 y = layer(y)
 
-            return self.compute_cic_loss(x, y, labels=batch['skill']).mean() # , labels=batch['skill']
+            return self.compute_cl_loss(x, y, labels=batch['skill']).mean() # , labels=batch['skill']
 
         return self.loss(x, batch['skill']).mean()
     
@@ -49,26 +49,26 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
             for layer in self.layers:
                 y = layer(y)
 
-            return torch.exp(-self.compute_cic_loss(x, y, labels=batch['skill'])).squeeze() # 
+            return torch.exp(-self.compute_cl_loss(x, y, labels=batch['skill'])).squeeze() # 
 
         return torch.exp(-self.compute_surprisal(x, batch['skill'])).squeeze() # CHANGE: seperate ir and loss computation
     
-    def compute_cic_loss(self, features, positive_features, labels=None,):
+    def compute_cl_loss(self, features, positive_features, labels=None,):
         
         features = F.normalize(features, dim=1)
         positive_features = F.normalize(positive_features, dim=1)
 
-        # 4. Compute logits (scaled dot product)
+        # Compute logits (scaled dot product)
         logits = torch.matmul(features, positive_features.T) / self.temperature  # shape: (B, B)
 
-        # 5. Labels: positive samples are diagonal
+        # Labels: positive samples are diagonal
         classes = torch.arange(logits.size(0), device=logits.device)
 
         if labels is not None:
             mask = (labels.unsqueeze(0) == labels.unsqueeze(1)).fill_diagonal_(0).bool().to(features.device)
             logits.masked_fill_(mask, float('-inf'))
 
-        # 6. Contrastive loss (InfoNCE)
+        # Contrastive loss (InfoNCE)
         loss = F.cross_entropy(logits, classes, reduction="none").view(features.size(0), -1)
 
         return loss

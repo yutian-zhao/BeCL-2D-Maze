@@ -2,7 +2,7 @@
   "learner_type": "ContrastiveMI",
   "agent_type": "maze",
   "train_type": "ppo",
-  "seed": 1,
+  "seed": 2,
   "norm_advantage": true,
   "cycles_per_epoch": 50,
   "rollouts_per_cycle": 1,
@@ -18,7 +18,7 @@
       "done_on_success": false,
       "random_start": false
     },
-    "device": "cuda",
+    "device": "cpu",
     "mode": "gs+",
     "skill_n": 15,
     "gamma": 0.99,

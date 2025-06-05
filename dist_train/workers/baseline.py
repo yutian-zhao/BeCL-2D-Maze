@@ -214,6 +214,7 @@ class PPO(PPOManager, OnPolicy):
         # CHANGE: avoid relabeling
         if relabel:
             # Calculate losses to allow dense logging
+            # NOTE: this is only for hist_{} and print
             episode_stats = self.agent_model.episode_summary()
 
             self._log_rollout(c_ep_counter, dur, episode_stats)

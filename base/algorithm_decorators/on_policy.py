@@ -156,10 +156,11 @@ def ppo_decorator(partial_agent_class):
                     self.reset_ep_stats = self.play_episode(*args, **kwargs) # Q:return function pointer? # NOTE:add self.agent.episode to _compress_me
 
                 # CHANGE: avoid relabeling
-                if self.mode:
+                if self.mode: # ""
+                    assert self.mode in ['gs-', 'gs+', 'g', 's+', 's-']
                     self.add_positives()
                 if relabel:
-                # relabel in here 
+                # relabel in here d
                     self.relabel_episode() # add intrinsic reward
                     batched_episode = {k: v.detach() for k, v in self.compress_episode().items()} # NOTE: batch_ep
                     self.add_to_mini_buffer(batched_episode)

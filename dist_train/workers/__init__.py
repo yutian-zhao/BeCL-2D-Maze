@@ -32,27 +32,28 @@ on_policy_algos = []  # (ignore PPO here; it is unique)
 off_policy_algos = ['sac']
 episodic_off_policy_algos = ['ddpg', 'dqn']
 
+def try_until_success(rank, settings, max_retries=10):
+    attempts = 0
+    while attempts < max_retries:
+        try:
+            ip = np.random.randint(10,99)
+            dist.init_process_group(
+                backend='gloo',
+                init_method='tcp://127.0.0.1:432{}'.format(str(ip)),
+                rank=rank,
+                world_size=settings.N
+            ) 
+            return 
+        except Exception as e:
+            attempts += 1
+            if attempts >= max_retries:
+                raise
+
 def synchronous_worker(rank, config, settings):
     """Create a worker to play episodes on a given port and send the results to the trainer"""
-    ip = np.random.randint(10,99)
     # Create a distributed process so the workers can share gradients and other such things
     # CHANGE:
-    try:
-        ip = np.random.randint(10,99)
-        dist.init_process_group(
-            backend='gloo',
-            init_method='tcp://127.0.0.1:432{}'.format(str(ip)),
-            rank=rank,
-            world_size=settings.N
-        ) 
-    except:
-        ip = np.random.randint(10,99)
-        dist.init_process_group(
-            backend='gloo',
-            init_method='tcp://127.0.0.1:432{}'.format(str(ip)),
-            rank=rank,
-            world_size=settings.N
-        ) 
+    try_until_success(rank, settings)
 
     if 'seed' in config.keys():
         seed = config['seed']
