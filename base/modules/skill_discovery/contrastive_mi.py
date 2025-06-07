@@ -26,7 +26,6 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         
     def forward(self, batch):
         x = batch[self.input_key] # Q: next state or state?
-        x = batch[self.input_key]
         for layer in self.layers:
             x = layer(x)
 
@@ -120,6 +119,7 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         return loss
     
     def compute_surprisal(self, features, labels):
+        # TODO: self.traj_length_each_episode -> self.skill_update_freq
         # CHANGE: to device
         # label positives samples
 

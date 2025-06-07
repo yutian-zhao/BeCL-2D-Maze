@@ -543,7 +543,7 @@ class PPOManager(OnPolicyManager):
     def update_wrapper(self):
         cycle_ep_counter = torch.zeros(1)
 
-        self.rollout_wrapper(cycle_ep_counter, relabel=False)
+        self.rollout_wrapper(cycle_ep_counter, for_aux=True)
 
         if self.aux_optim is not None:
             for u in range(self.config["update_epochs_per_rollout"]):
@@ -586,5 +586,6 @@ class PPOManager(OnPolicyManager):
         dist.all_reduce(cycle_ep_counter)
         self.agent_model.train_steps += cycle_ep_counter.item()
 
+        self.stats_logger.log("train/episode", self.update_counter, self.update_counter)
         self.stats_logger.dump(self.update_counter, 'train')
         self.update_counter += 1

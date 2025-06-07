@@ -28,8 +28,8 @@ class StochasticAgent(BaseSkillDiscoveryAgent):
         return self.skill_embedding(curr_skill)
 
     def sample_skill(self):
-        # return self.skill_dist.sample(sample_shape=(1,)).view([])
-        return next(self.skills)
+        return self.skill_dist.sample(sample_shape=(1,)).view([])
+        # return next(self.skills)
 
     @property
     def rollout(self):

@@ -20,7 +20,7 @@ class ContrastiveMILearner(BaseContrastiveMILearner):
 
     def _make_agent(self):
         return StochasticAgent(skill_n=self.skill_n, env=self.create_env(), policy=self.policy,
-                               skill_embedding=self.skill_emb, device=self.device).to(self.device)
+                               skill_embedding=self.skill_emb, device=self.device, skill_update_freq=self.skill_update_freq).to(self.device)
 
     def _make_agent_modules(self):
         self._make_skill_embedding()

@@ -207,12 +207,14 @@ class OnPolicy(OnPolicyManager):
 
 
 class PPO(PPOManager, OnPolicy):
-    def rollout_wrapper(self, c_ep_counter, relabel=True):
+
+    def rollout_wrapper(self, c_ep_counter, for_aux=False):
         st = time.time()
-        self.agent_model.reach_horizon(relabel=relabel) # NOTE: reset stats
+        self.agent_model.reach_horizon(for_aux=for_aux)  # NOTE: reset stats
         dur = time.time() - st
+        print(f"aux dur: {dur}")
         # CHANGE: avoid relabeling
-        if relabel:
+        if not for_aux:
             # Calculate losses to allow dense logging
             # NOTE: this is only for hist_{} and print
             episode_stats = self.agent_model.episode_summary()

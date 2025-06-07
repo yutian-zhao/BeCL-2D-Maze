@@ -107,7 +107,7 @@ class BaseHierarchicalActor(nn.Module):
 
     @property
     def current_horizon(self):
-        mb_state = self._mini_buffer['state']
+        mb_state = self._mini_buffer.get('state', None)
         if mb_state is None:
             return 0
         else:

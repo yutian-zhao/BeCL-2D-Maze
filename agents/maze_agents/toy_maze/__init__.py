@@ -51,6 +51,9 @@ add_to_learners(Learner, 'ppo')
 from .skill_discovery.contrastive_mi import ContrastiveMILearner as Learner
 add_to_learners(Learner, 'ppo')
 
+from .skill_discovery.endpoint_contrastive_mi import EndpointContrastiveMILearner as Learner
+add_to_learners(Learner, 'ppo')
+
 # from .skill_discovery.smm import SMMLearner as Learner
 # add_to_learners(Learner, 'sac')
 

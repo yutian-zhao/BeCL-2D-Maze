@@ -148,6 +148,10 @@ class Env:
     def sibling_reset(self):
         return {'state': self._state['s0'].detach(), 'goal': self.goal}
 
+    @property
+    def curr_step(self):
+        return self._state['n']
+
     def reset(self, state=None, goal=None, antigoal=None):
         if state is None or self._ignore_reset_start:
             if self.random_start:

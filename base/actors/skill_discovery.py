@@ -8,8 +8,10 @@ from .base import BaseActor
 
 
 class BaseSkillDiscoveryAgent(BaseActor):
-    def __init__(self, **kwargs):
+    # CHANGE: Update skills in episode
+    def __init__(self, skill_update_freq=None, **kwargs):
         self.curr_skill = None
+        self.skill_update_freq = skill_update_freq
 
         self.batch_keys = [
             'state', 'next_state', 'skill',
@@ -36,6 +38,14 @@ class BaseSkillDiscoveryAgent(BaseActor):
         self.env.reset(*args, **kwargs)
         self.episode = []
         self.reset_skill(skill)
+
+    def play_episode(self, reset_dict={}, do_eval=False):
+        self.reset(**reset_dict)
+        while not self.env.is_done:
+            self.step(do_eval)
+            if self.skill_update_freq and self.env.curr_step%self.skill_update_freq==0:
+                # TODO: currently not reuse reset_dict
+                self.reset_skill()
 
     def collect_transitions(self, num_transitions, reset_dict={}, do_eval=False):
         self.episode = []

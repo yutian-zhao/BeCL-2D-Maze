@@ -32,7 +32,8 @@ COMMON_EVAL_FORMAT = [('frame', 'F', 'int'), ('step', 'S', 'int'),
                       ('episode_reward', 'R', 'float'),
                       ('total_time', 'T', 'time')]
 
-COMMON_FORMAT = [ ('agent_loss', 'AL', 'float'), 
+COMMON_FORMAT = [ ('episode', 'E', 'int'),
+                 ('agent_loss', 'AL', 'float'), 
                 ('intr_reward', 'IR', 'float'),
                 ('value_func', 'V', 'float'),
                 ('v_loss', 'VL', 'float'),
