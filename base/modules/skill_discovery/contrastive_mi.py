@@ -57,15 +57,15 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         another_positive = features.view(-1, self.traj_length_each_episode, self.n)[:, self.traj_length_each_episode-1, :].view(-1, self.n)
         feature_dim = features.shape[-1]
         another_positive = another_positive.flatten()   # (feature_dim * goal_num)
-        another_positive = another_positive.expand(50, -1)        #(50, feature_dim * goal_num)
+        another_positive = another_positive.expand(self.traj_length_each_episode, -1)        #(50, feature_dim * goal_num)
         another_positive = another_positive.reshape(another_positive.shape[0], -1, feature_dim)        # (50, goal_num, feature_dim)
         another_positive = another_positive.permute(1,0,2)      # (goal_num, 50, feature_dim)
         another_positive = another_positive.reshape(-1,feature_dim)    #(50 * goal_num (b), feature_dim)
         
 
-        positives = torch.sum(torch.exp(features * another_positive), dim=-1, keepdim=True) 
+        positives = torch.exp(torch.sum(features * another_positive, dim=-1, keepdim=True)) 
         negatives = torch.sum(similarity_matrix * (~labels.bool()).float(), dim=-1, keepdim=True) 
 
         eps = torch.as_tensor(1e-6)
-        loss = -torch.log(positives / (negatives + eps) + eps)
+        loss = -torch.log(positives / (positives + negatives + eps) + eps)
         return loss

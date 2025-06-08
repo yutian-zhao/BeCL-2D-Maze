@@ -91,13 +91,21 @@ def ppo_decorator(partial_agent_class):
                 mb_indices = np.split(np.random.permutation(self.horizon), self.horizon // self.mini_batch_size)
             else:
                 sz = [v.shape[0] for v in self._epoch_transitions.values()][0]
-                n_total = self.n_mini_batches * (sz // self.n_mini_batches)
-                perm_indices = np.random.permutation(sz)[:n_total]
+                # n_total = self.n_mini_batches * (sz // self.n_mini_batches)
+                # perm_indices = np.random.permutation(sz)[:n_total]
+                # mb_indices = np.split(perm_indices, self.n_mini_batches)
+
+                traj_len = self.im.traj_length_each_episode
+                seg_num = sz // traj_len # NOTE: ignore the incomplete
+                n_total = self.n_mini_batches * (seg_num // self.n_mini_batches)
+                perm_indices = np.random.permutation(seg_num)[:n_total]
                 mb_indices = np.split(perm_indices, self.n_mini_batches)
 
             mini_batches = []
             for indices in mb_indices:
-                this_batch = {k: v[indices] for k, v in self._epoch_transitions.items()}
+                # this_batch = {k: v[indices] for k, v in self._epoch_transitions.items()}
+                this_batch = {k: torch.cat([v[i*traj_len:(i+1)*traj_len] for i in indices], dim=0) for k, v in self._epoch_transitions.items()}
+
                 if normalize_advantage and 'advantage' in this_batch:
                     mb_mean = this_batch['advantage'].mean(dim=0, keepdim=True)
                     mb_std = this_batch['advantage'].std(dim=0, keepdim=True)
