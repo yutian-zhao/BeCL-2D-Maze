@@ -8,7 +8,7 @@ from .base import StochasticAgent
 from agents.maze_agents.toy_maze.env import Env
 from base.modules.generic import OneHotEmbedding
 from agents.maze_agents.modules import StochasticPolicy, Value
-from base.modules.skill_discovery.contrastive_mi import Discriminator
+from base.modules.skill_discovery.endpoint_contrastive_mi import EndpointDiscriminator
 from base.learners.skill_discovery.contrastive_mi import BaseContrastiveMILearner
 from agents.maze_agents.toy_maze.skill_discovery.contrastive_mi import ContrastiveMILearner
 
@@ -16,19 +16,26 @@ from agents.maze_agents.toy_maze.skill_discovery.contrastive_mi import Contrasti
 class EndpointContrastiveMILearner(ContrastiveMILearner):
     AGENT_TYPE = "EndpointContrastiveMI"
 
+    def __init__(self, *args, mode=None, **kwargs): 
+        self.mode = mode
+        if self.mode:  # default is ""
+            assert self.mode in ["strict", "strict_s+", "strict_s+_s-", "strict_s-_s+"]
+        super().__init__(*args, **kwargs)
+
     def _make_im_modules(self):
-        return Discriminator(self.skill_n, self._dummy_env.state_size,
-                             num_layers=self.num_layers, hidden_size=self.hidden_size,
+        return EndpointDiscriminator(self.skill_n, self._dummy_env.state_size,
+                             mode=self.mode, num_layers=self.num_layers, hidden_size=self.hidden_size,
                              normalize_inputs=self.normalize_inputs, input_key='initial_terminal', input_size=self._dummy_env.state_size*2, **self.im_kwargs).to(self.device)
 
     def sample_positives(self, batched_episode):
+        # TODO: device
         B = batched_episode["next_state"].size(0)
         batched_segments = {}
         initial_idx = [*range(0, B, self.skill_update_freq)]
         terminal_idx = [*range(self.skill_update_freq-1, B, self.skill_update_freq)]
         if len(terminal_idx) < len(initial_idx):
             terminal_idx.append(B-1)
-        batched_segments['initial_terminal'] = torch.cat([batched_episode["next_state"][initial_idx],batched_episode["next_state"][terminal_idx]], dim=-1)
+        batched_segments['initial_terminal'] = torch.cat([batched_episode["state"][initial_idx],batched_episode["next_state"][terminal_idx]], dim=-1)
         batched_segments['skill'] =  batched_episode["skill"][initial_idx]
         labels = batched_segments["skill"]
         labels = labels.unsqueeze(0) == labels.unsqueeze(1)
@@ -49,12 +56,12 @@ class EndpointContrastiveMILearner(ContrastiveMILearner):
         for ep in self._compress_me:
             batched_episode = {key: torch.stack([e[key] for e in ep]) for key in ep[0].keys()}
             B = batched_episode["next_state"].size(0)
-            batched_segments = self.sample_positives(batched_episode)
-            batched_episodes.append(batched_segments)
+            # batched_episode = self.sample_positives(batched_episode)
+            batched_episodes.append(batched_episode)
 
             if not for_aux:
                 with torch.no_grad():
-                    surprisals = self._compute_surprisal(batched_segments)
+                    surprisals = self._compute_surprisal(batched_episode)
 
                 surprisals = surprisals.view(-1, 1).expand(-1, self.skill_update_freq).flatten()[:B]
 

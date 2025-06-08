@@ -52,6 +52,8 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
 
         return torch.exp(-self.compute_surprisal(x, batch['skill'])).squeeze() # CHANGE: seperate ir and loss computation
     
+
+
     def compute_cl_loss(self, features, positive_features, labels=None,):
         
         features = F.normalize(features, dim=1)

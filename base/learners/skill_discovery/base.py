@@ -38,6 +38,8 @@ class BaseSkillDiscoveryLearner(BaseLearner):
 
         # CHANGE: Comment out assert
         # assert len(self._compress_me[0]) == 50 * 50 and len(self._compress_me) == 1
+        assert len(self._compress_me[0]) == self.rollouts * self.agent.env.n and len(self._compress_me) == 1
+
         # Add discriminator reward
         self._add_im_reward()
 
