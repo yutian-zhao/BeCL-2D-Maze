@@ -65,8 +65,10 @@ def config_subplot(ax, maze_type=None, title=None, extra_lim=0., fontsize=14, ex
 def play_episode(agent, skill, do_eval, reset_dict={}):
     agent.reset(**reset_dict)
     agent.curr_skill = agent.curr_skill * 0 + skill
-    while not agent.env.is_done:
+    counter = 0
+    while (counter < agent.skill_update_freq) and (not agent.env.is_done):
         agent.step(do_eval)
+        counter += 1
 
 
 def _plot_all_skills(exp, cmap, ax=None, reset_dict=None, alpha=1., linewidth=1., agent=None, ):

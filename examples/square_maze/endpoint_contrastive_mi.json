@@ -18,12 +18,12 @@
       "n": 50,
       "maze_type": "square_a",
       "done_on_success": false,
-      "random_start": false
+      "random_start": true
     },
     "device": "cpu",
     "mode": "",
-    "skill_update_freq": 10,
-    "aux_rollouts": 500,
+    "skill_update_freq": 5,
+    "aux_rollouts": 250,
     "skill_n": 15,
     "gamma": 0.99,
     "gae_lambda": 0.98,
@@ -38,7 +38,7 @@
       "nu": 1,
       "lambda": 1,
       "model_params": {
-        "traj_length_each_episode": 10,
+        "traj_length_each_episode": 5,
         "temperature": 0.5
       }
     }
