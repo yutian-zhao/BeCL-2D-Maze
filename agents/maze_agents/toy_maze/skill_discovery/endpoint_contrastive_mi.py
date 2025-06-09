@@ -16,7 +16,8 @@ from agents.maze_agents.toy_maze.skill_discovery.contrastive_mi import Contrasti
 class EndpointContrastiveMILearner(ContrastiveMILearner):
     AGENT_TYPE = "EndpointContrastiveMI"
 
-    def __init__(self, *args, mode=None, **kwargs): 
+    def __init__(self, *args, mode=None, use_reg=False, **kwargs): 
+        self.use_reg = use_reg
         self.mode = mode
         if self.mode:  # default is ""
             assert self.mode in ["strict", "strict_s+", "strict_s+_s-", "strict_s-_s+"]
@@ -24,7 +25,7 @@ class EndpointContrastiveMILearner(ContrastiveMILearner):
 
     def _make_im_modules(self):
         return EndpointDiscriminator(self.skill_n, self._dummy_env.state_size,
-                             mode=self.mode, num_layers=self.num_layers, hidden_size=self.hidden_size,
+                             mode=self.mode, use_reg=self.use_reg, num_layers=self.num_layers, hidden_size=self.hidden_size,
                              normalize_inputs=self.normalize_inputs, input_key='initial_terminal', input_size=self._dummy_env.state_size*2, **self.im_kwargs).to(self.device)
 
     def sample_positives(self, batched_episode):

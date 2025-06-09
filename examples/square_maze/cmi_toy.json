@@ -22,6 +22,7 @@
     },
     "device": "cpu",
     "mode": "",
+    "use_reg": true,
     "skill_update_freq": 2,
     "aux_rollouts": 2,
     "skill_n": 2,

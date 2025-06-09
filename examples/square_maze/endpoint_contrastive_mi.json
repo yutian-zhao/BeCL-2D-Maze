@@ -21,7 +21,8 @@
       "random_start": true
     },
     "device": "cpu",
-    "mode": "strict",
+    "mode": "strict_s-_s+",
+    "use_reg": false,
     "skill_update_freq": 5,
     "aux_rollouts": 2500,
     "skill_n": 15,

@@ -18,9 +18,10 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
         assert num_layers >= 2
         self.num_layers = int(num_layers)
         self.count = 0 
-        input_normalizer = Normalizer(self.state_size) if normalize_inputs else nn.Sequential()
-        self.layers = create_nn(input_size=self.state_size, output_size=self.n, hidden_size=hidden_size,
-                                num_layers=self.num_layers, input_normalizer=input_normalizer) # Q: why feature dim = skill_n?
+        self.hidden_size = hidden_size
+        self.input_normalizer = Normalizer(self.state_size) if normalize_inputs else nn.Sequential()
+        self.layers = create_nn(input_size=self.state_size, output_size=self.n, hidden_size=self.hidden_size,
+                                num_layers=self.num_layers, input_normalizer=self.input_normalizer) # Q: why feature dim = skill_n?
 
         self.loss = self.compute_info_nce_loss
         
