@@ -19,7 +19,7 @@ class EndpointDiscriminator(Discriminator):
         return self.compute_cl_loss(batch).mean()
     
     def surprisal(self, batch):
-        return self.compute_cl_loss(batch)
+        return torch.exp(-self.compute_cl_loss(batch))
 
 
 
@@ -66,6 +66,10 @@ class EndpointDiscriminator(Discriminator):
         elif self.mode == 'strict_s-_s+':
             # mask out negative non initial_terminal pairs
             mask = torch.logical_or((~s_mask) & (~labels) & (~initial_mask), labels & initial_mask)
+            # TODO: NOTE: TEMP: Check pos/neg ration effect
+            true_negative_mask = initial_mask&(~labels)
+            true_negative_mask[:, :mask.shape[1]//2] = False
+            mask = torch.logical_or(mask, true_negative_mask)
         elif self.mode == 'strict_s+':
             # besides strict, add positive pairs from the same trajectories
             mask = (~s_mask) & torch.logical_or(labels, ~initial_mask)

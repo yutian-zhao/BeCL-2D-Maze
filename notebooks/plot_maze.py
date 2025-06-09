@@ -9,11 +9,12 @@ from result_inspection.plot_helpers import *
 
 plot_kwargs = dict(stat_list=['cumulative_rew'], labels=['Reward'], figsize=(6, 4), titlesize=14)
 # skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=torch.tensor([0., -0.5])))
-start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5]]
+start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5], [2, -2], [4, -2], [2, -4], [4, -4], [0, -4]]
 start_state = torch.tensor(start_state)
 
 
-algo = "endpoint_contrastive_mi_06080112"
+algo = "endpoint_contrastive_mi_06091023"
+# algo = "contrastive_mi_06052350"
 env = "square_maze"
 
 exp, cmap = load_exp_data(

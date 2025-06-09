@@ -508,6 +508,20 @@ mazes_dict['circle'] = {'maze': CircleMaze(), 'action_range': 0.25}
 # A2          C0
 # A3 B0 B1 B2 B3
 
+segments_empty = [
+    dict(name='A', anchor='origin', direction='down', times=4),
+    dict(name='B', anchor='origin', direction='right', times=4),
+    dict(name='C', anchor='A0', direction='right', times=4),
+    dict(name='D', anchor='A1', direction='right', times=4),
+    dict(name='E', anchor='A2', direction='right', times=4),
+    dict(name='F', anchor='A3', direction='right', times=4),
+]
+
+# _walls_to_remove_empty = [((0.5, -0.5), (4.5,-0.5)), ((0.5, -1.5), (4.5,-1.5)), ((0.5, -2.5), (4.5,-2.5)), ((0.5, -3.5), (4.5,-3.5))]
+
+_walls_to_remove_empty = [((x, x+1), (y, y)) for x in [0.5, 1.5, 2.5, 3.5] for y in [-0.5, -1.5, -2.5, -3.5]]
+mazes_dict['square_empty'] = {'maze': Maze(*segments_empty, goal_squares=['e2', 'e3'], walls_to_remove=_walls_to_remove_empty), 'action_range': 0.95}
+
 segments_a = [
     dict(name='A', anchor='origin', direction='down', times=4),
     dict(name='B', anchor='A3', direction='right', times=4),

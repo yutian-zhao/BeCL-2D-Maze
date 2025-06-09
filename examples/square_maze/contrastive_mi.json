@@ -16,7 +16,7 @@
   "agent_params": {
     "env_params": {
       "n": 50,
-      "maze_type": "square_a",
+      "maze_type": "square_empty",
       "done_on_success": false,
       "random_start": false
     },
