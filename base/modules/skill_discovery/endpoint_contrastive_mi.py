@@ -26,14 +26,14 @@ class EndpointDiscriminator(Discriminator):
 
     def forward(self, batch):
         loss, reg_loss = self.compute_cl_loss(batch)
-        if reg_loss:
+        if reg_loss is not None:
             return loss.mean() + reg_loss.mean()
         else:
             return loss.mean()
 
     def surprisal(self, batch):
         loss, reg_loss = self.compute_cl_loss(batch)
-        if reg_loss:
+        if reg_loss is not None:
             return torch.exp(-loss) - torch.exp(-reg_loss)
         else:
             return torch.exp(-loss)
@@ -55,7 +55,7 @@ class EndpointDiscriminator(Discriminator):
                 terminals = layer(terminals)
             reg_loss = self.compute_info_nce_loss(terminals, terminal_labels).squeeze() # strict true negtives only
         else:
-            reg_loss = 0
+            reg_loss = None
 
         terminals = batch["next_state"][terminal_idx]
         expanded_terminals = (

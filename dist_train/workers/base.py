@@ -376,13 +376,15 @@ class OnPolicyManager:
             dist.broadcast(parameter.data, src=0)
 
         self.optim = Adam(self.agent_model.parameters(), lr=config['learning_rate'])
-        if os.path.isfile(self.optim_path):
-            self.optim.load_state_dict(torch.load(self.optim_path))
+        # TODO: CHANGE: do not load optimizer
+        # if os.path.isfile(self.optim_path):
+        #     self.optim.load_state_dict(torch.load(self.optim_path))
 
         if self.agent_model.im is not None or self.agent_model.density is not None:
             self.aux_optim = Adam(self.agent_model.get_aux_optim_params())
-            if os.path.isfile(self.aux_optim_path):
-                self.aux_optim.load_state_dict(torch.load(self.aux_optim_path))
+            # TODO: CHANGE: do not load optimizer
+            # if os.path.isfile(self.aux_optim_path):
+            #     self.aux_optim.load_state_dict(torch.load(self.aux_optim_path))
         else:
             self.aux_optim = None
 

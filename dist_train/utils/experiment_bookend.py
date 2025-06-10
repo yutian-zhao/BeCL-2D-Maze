@@ -38,13 +38,18 @@ def open_experiment(apply_time_machine=True):
     parser.add_argument('--keep_checkpoints', action='store_true',
                         help='Flag to enable saving model parameters separately for each checkpoint')
 
+    parser.add_argument('--exp_name', type=str, default='', help='exp to continue')
+                        
     args = parser.parse_args()
 
     config_path = args.config_path
     assert os.path.isfile(config_path)
     config = json.load(open(config_path))
 
-    exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
+    if args.exp_name:
+        exp_name= args.exp_name
+    else:
+        exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name) # CHANGE: add time stamp
     args.exp_name = exp_name
 
@@ -77,8 +82,9 @@ def open_experiment(apply_time_machine=True):
     model.share_memory() # Q:why share memory here?
 
     shared_optimizer = SharedAdam(model.parameters(), lr=config['learning_rate'])
-    if os.path.isfile(optim_path):
-        shared_optimizer.load_state_dict(torch.load(optim_path))
+    # TODO: CHANGE: do not load optimizer, also it's not used anyway
+    # if os.path.isfile(optim_path):
+    #     shared_optimizer.load_state_dict(torch.load(optim_path))
     shared_optimizer.share_memory()
     shared_optimizer.zero_grad()
 
@@ -86,10 +92,11 @@ def open_experiment(apply_time_machine=True):
 
 
 def close_experiment(model, optimizer, args):
+    # CHANGE: pass in exp_name
     config_path = args.config_path
-    exp_name = config_path.split('/')[-1][:-5]+"_"+datetime.now().strftime("%m%d%H%M")
+    exp_name = args.exp_name #config_path.split('/')[-1][:-5] # +"_"+datetime.now().strftime("%m%d%H%M")
     exp_dir = os.path.join(args.log_dir, exp_name)
-    args.exp_name = exp_name
+    # args.exp_name = exp_name
 
     model_path = os.path.join(exp_dir, 'model.pth.tar')
     optim_path = os.path.join(exp_dir, 'optim.pth.tar')
