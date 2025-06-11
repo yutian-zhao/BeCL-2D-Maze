@@ -12,11 +12,18 @@ class EndpointDiscriminator(Discriminator):
     def __init__(self, *args, mode=None, use_reg=False, **kwargs):
         self.mode = mode
         if self.mode:  # default is ""
-            assert self.mode in ["strict", "strict_s+", "strict_s+_s-", "strict_s-_s+"]
+            assert self.mode in ["strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-"]
         super().__init__(*args, **kwargs)
 
         if use_reg:
             self.reg_layers = create_nn(
+                input_size=self.state_size,
+                output_size=self.n,
+                hidden_size=self.hidden_size,
+                num_layers=self.num_layers,
+                input_normalizer=self.input_normalizer,
+            )
+            self.reg_layers2 = create_nn(
                 input_size=self.state_size // 2,
                 output_size=self.n,
                 hidden_size=self.hidden_size,
@@ -35,7 +42,7 @@ class EndpointDiscriminator(Discriminator):
         loss, reg_loss = self.compute_cl_loss(batch)
         if reg_loss is not None:
             # TODO: change lambda later, because use whole eps, length should be the same
-            return torch.exp(-loss) - 0.01*torch.exp(-reg_loss)
+            return torch.exp(-loss) + 0.1*torch.exp(-reg_loss)
         else:
             return torch.exp(-loss)
 
@@ -46,21 +53,33 @@ class EndpointDiscriminator(Discriminator):
         next_states = batch["next_state"]
         initial_idx = [*range(0, B, skill_len)]
         
-        if hasattr(self, 'reg_layers'):
-            next_state_features = batch["next_state"]
-            for layer in self.reg_layers:
-                next_state_features = layer(next_state_features)
-            # TODO: compute_info_nce_loss # strict true negtives only NOT strict for positives
-            # compute_surprisal # s_t,g
-            reg_loss = self.compute_info_nce_loss(next_state_features, batch["skill"]).squeeze() 
-        else:
-            reg_loss = None
+        # if hasattr(self, 'reg_layers'):
+        #     next_state_features = batch["next_state"]
+        #     for layer in self.reg_layers:
+        #         next_state_features = layer(next_state_features)
+        #     # TODO: compute_info_nce_loss # strict true negtives only NOT strict for positives
+        #     # compute_surprisal # s_t,g
+        #     reg_loss = self.compute_info_nce_loss(next_state_features, batch["skill"]).squeeze() 
+        # else:
+        #     reg_loss = None
 
         initials = batch["state"][initial_idx]
         expanded_initials = (
             torch.unsqueeze(initials, dim=1).expand(-1, skill_len, -1).reshape(-1, initials.shape[-1])
         )
         features = torch.cat([expanded_initials, next_states], dim=-1)
+
+        if hasattr(self, 'reg_layers'):
+            terminal_idx = [*range(skill_len - 1, B, skill_len)]  # assume dividable
+            if len(terminal_idx) < len(initial_idx):
+                terminal_idx.append(B - 1)
+            terminals = batch["next_state"][terminal_idx]
+            expanded_terminals = (
+                torch.unsqueeze(terminals, dim=1).expand(-1, skill_len, -1).reshape(-1, terminals.shape[-1])
+            )
+            reg_loss = self.compute_reg_loss(features, labels=batch["skill"], positives=expanded_terminals)
+        else:
+            reg_loss = None
 
         for layer in self.layers:
             features = layer(features)
@@ -81,6 +100,7 @@ class EndpointDiscriminator(Discriminator):
 
         similarity_matrix.masked_fill_(self_mask, float("-inf"))
         candidate_mask = (labels & t_mask & (~self_mask)).int()
+        # NOTE: len is not B now
         has_postive = torch.sum(candidate_mask, dim=-1)!=0
         candidate_mask = candidate_mask[has_postive]
         similarity_matrix = similarity_matrix[has_postive]
@@ -94,6 +114,41 @@ class EndpointDiscriminator(Discriminator):
         
 
         return loss, reg_loss
+
+    def compute_reg_loss(self, features, labels, positives=None, ):
+        # NOTE: features are states
+        for layer in self.reg_layers:
+            features = layer(features)
+
+        if positives is None:
+            positives = features
+        else:
+            for layer in self.reg_layers2:
+                positives = layer(positives)
+
+        features = F.normalize(features, dim=1)
+        positives = F.normalize(positives, dim=1)
+
+        # Compute logits (scaled dot product)
+        logits = torch.matmul(features, positives.T) / self.temperature  # shape: (B, B)
+        assert not(torch.isnan(logits).any() or torch.isinf(logits).any())
+
+        # Labels: positive samples are diagonal
+        classes = torch.arange(logits.size(0), device=logits.device)
+
+        # mask out negative pairs
+        if self.mode == 'strict':
+            mask = (labels.unsqueeze(0) != labels.unsqueeze(1)).to(features.device)
+            logits.masked_fill_(mask, float('-inf'))
+
+        # Contrastive loss (InfoNCE)
+        loss = F.cross_entropy(logits, classes, reduction="none")
+
+        return loss
+
+
+
+
 
     # def compute_cl_loss(self, batch):
     #     # s0, g

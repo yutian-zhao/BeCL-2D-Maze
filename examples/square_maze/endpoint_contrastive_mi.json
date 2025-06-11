@@ -9,29 +9,29 @@
   "cycles_per_epoch": 50,
   "rollouts_per_cycle": 1,
   "update_epochs_per_rollout": 4,
-  "eval_iters": 20,
+  "eval_iters": 1,
   "greedy_eval": false,
   "learning_rate": 0.0003,
   "epoch_lr_decay": 1,
   "agent_params": {
     "env_params": {
-      "n": 3,
+      "n": 5,
       "maze_type": "square_empty",
       "done_on_success": false,
       "random_start": true
     },
     "device": "cpu",
-    "mode": "",
-    "use_reg": false,
-    "skill_update_freq": 3,
-    "aux_rollouts": 2500,
+    "mode": "strict",
+    "use_reg": true,
+    "skill_update_freq": 5,
+    "aux_rollouts": 500,
     "skill_n": 15,
     "gamma": 0.99,
     "gae_lambda": 0.98,
     "entropy_lambda": 0.025,
     "normalize_inputs": false,
     "env_reward": false,
-    "rollouts": 800,
+    "rollouts": 500,
     "n_mini_batches": 10,
     "hidden_size": 128,
     "num_layers": 3,
@@ -39,7 +39,7 @@
       "nu": 1,
       "lambda": 1,
       "model_params": {
-        "traj_length_each_episode": 3,
+        "traj_length_each_episode": 5,
         "temperature": 0.5
       }
     }
