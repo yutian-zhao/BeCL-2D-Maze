@@ -15,12 +15,13 @@ from agents.maze_agents.toy_maze.skill_discovery.edl import VQVAEDiscriminator
 import seaborn as sns
 import numpy as np 
 
-NUM_TRAJECTORIES = 5
+NUM_TRAJECTORIES = 20
 TRAJECTORY_KWARGS = dict(alpha=0.2, linewidth=2)
 
 SAVEFIG_KWARGS = dict(bbox_inches='tight', transparent=True)
 
 ENV_LIMS = dict(
+    square_empty=dict(xlim=(-0.55, 4.55), ylim=(-4.55, 0.55), x=(-0.5, 4.5), y=(-4.5, 0.5)),
     square_a=dict(xlim=(-0.55, 4.55), ylim=(-4.55, 0.55), x=(-0.5, 4.5), y=(-4.5, 0.5)),
     square_bottleneck=dict(xlim=(-0.55, 9.55), ylim=(-0.55, 9.55), x=(-0.5, 9.5), y=(-0.5, 9.5)),
     square_corridor=dict(xlim=(-5.55, 5.55), ylim=(-0.55, 0.55), x=(-5.5, 5.5), y=(-0.5, 0.5)),

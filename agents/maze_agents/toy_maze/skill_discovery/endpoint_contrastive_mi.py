@@ -64,7 +64,10 @@ class EndpointContrastiveMILearner(ContrastiveMILearner):
                 with torch.no_grad():
                     surprisals = self._compute_surprisal(batched_episode)
 
-                surprisals = surprisals.view(-1, 1).expand(-1, self.skill_update_freq).flatten()[:B]
+                # TODO: debug
+                if len(surprisals) != len(ep):
+                    surprisals = surprisals.view(-1, 1).expand(-1, self.skill_update_freq).flatten()[:B]
+                assert len(surprisals) == len(ep)
 
                 if self.im_scale:
                     self.train()

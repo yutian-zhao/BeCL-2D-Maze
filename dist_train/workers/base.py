@@ -551,7 +551,7 @@ class PPOManager(OnPolicyManager):
             for u in range(self.config["update_epochs_per_rollout"]):
                 for mini_batch in self.agent_model.make_epoch_mini_batches(normalize_advantage=False):
                     self.aux_optim.zero_grad()
-                    loss = self.agent_model.forward_aux(mini_batch)
+                    loss, metrics = self.agent_model.forward_aux(mini_batch)
                     loss.backward()
                     for p in self.agent_model.parameters():
                         if p.grad is not None:
@@ -559,7 +559,8 @@ class PPOManager(OnPolicyManager):
                             p.grad.data /= dist.get_world_size()
                     # _ = clip_grad_norm_(self.agent_model.parameters(), max_norm=0.5)
                     self.aux_optim.step()
-                    self.stats_logger.log('train/contrastive_loss', loss.item(), self.update_counter)
+                    self.stats_logger.log_metrics(metrics, self.update_counter, 'train')
+                    # self.stats_logger.log('train/contrastive_loss', loss.item(), self.update_counter)
             # We collect new data with reward coming from the updated density model. This is slower (but easier to
             # implement) than relabeling previous samples. Note that we only count the rollouts used for updating the
             # policy when reporting data efficiency.

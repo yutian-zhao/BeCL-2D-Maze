@@ -18,7 +18,7 @@
       "n": 8,
       "maze_type": "square_empty",
       "done_on_success": false,
-      "random_start": false
+      "random_start": true
     },
     "device": "cpu",
     "mode": "",

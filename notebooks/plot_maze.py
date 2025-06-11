@@ -13,9 +13,10 @@ start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5], [2, -2], [4, -2], [2, 
 start_state = torch.tensor(start_state)
 
 
-algo = "endpoint_contrastive_mi_06091023"
-# algo = "contrastive_mi_06052350"
-env = "square_maze"
+algo = "endpoint_contrastive_mi_06100035"
+# algo = "contrastive_mi_06111531"
+# env = "square_maze"
+env = "empty_maze"
 
 exp, cmap = load_exp_data(
     "{}/{}".format(env, algo), notebook_mode=False

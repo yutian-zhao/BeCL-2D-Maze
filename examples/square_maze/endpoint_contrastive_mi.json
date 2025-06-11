@@ -2,7 +2,7 @@
   "learner_type": "EndpointContrastiveMI",
   "agent_type": "maze",
   "train_type": "ppo",
-  "seed": 2,
+  "seed": 4,
   "use_wandb": true,
   "use_tb": false,
   "norm_advantage": true,
@@ -15,15 +15,15 @@
   "epoch_lr_decay": 1,
   "agent_params": {
     "env_params": {
-      "n": 5,
+      "n": 3,
       "maze_type": "square_empty",
       "done_on_success": false,
       "random_start": true
     },
     "device": "cpu",
     "mode": "",
-    "use_reg": true,
-    "skill_update_freq": 5,
+    "use_reg": false,
+    "skill_update_freq": 3,
     "aux_rollouts": 2500,
     "skill_n": 15,
     "gamma": 0.99,
@@ -31,7 +31,7 @@
     "entropy_lambda": 0.025,
     "normalize_inputs": false,
     "env_reward": false,
-    "rollouts": 500,
+    "rollouts": 800,
     "n_mini_batches": 10,
     "hidden_size": 128,
     "num_layers": 3,
@@ -39,7 +39,7 @@
       "nu": 1,
       "lambda": 1,
       "model_params": {
-        "traj_length_each_episode": 5,
+        "traj_length_each_episode": 3,
         "temperature": 0.5
       }
     }

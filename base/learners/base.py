@@ -309,12 +309,22 @@ class BaseLearner(nn.Module):
         # CHANGE: to device
         loss = torch.tensor(0.).to(self.device)
 
+        metrics = {}
+
         if self.im is not None:
-            loss += (self.im_lambda * self.get_im_loss(mini_batch)) # NOTE: im_lambda=1
+            im_loss = self.get_im_loss(mini_batch)
+            if type(im_loss) == tuple:
+                im_loss, reg_loss = im_loss
+                loss += (self.im_lambda * (im_loss + reg_loss)) # NOTE: im_lambda=1
+                metrics['contrastive_loss'] = im_loss.item()
+                metrics['reg_loss'] = reg_loss.item()
+            else:
+                loss += (self.im_lambda * (im_loss)) # NOTE: im_lambda=1
+                metrics['contrastive_loss'] = im_loss.item()
 
         if self.density is not None:
             loss += (self.density_lambda * self.get_density_loss(mini_batch))
 
         self.eval()
 
-        return loss
+        return loss, metrics
