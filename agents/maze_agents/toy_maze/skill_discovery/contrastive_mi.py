@@ -72,6 +72,7 @@ class ContrastiveMILearner(BaseContrastiveMILearner):
             g_mask[:, torch.arange(self.agent.env.n - 1, labels.shape[1], self.agent.env.n, dtype=int)] = True
             # other s
             s_mask = torch.arange(labels.shape[0], dtype=int)
+            # NOTE: TODO: skill_len
             s_mask = s_mask // self.agent.env.n
             other_s_mask = s_mask.unsqueeze(0) != s_mask.unsqueeze(1)
             s_mask = s_mask.unsqueeze(0) == s_mask.unsqueeze(1)

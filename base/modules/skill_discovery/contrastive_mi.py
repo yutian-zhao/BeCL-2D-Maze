@@ -56,7 +56,7 @@ class Discriminator(nn.Module, IntrinsicMotivationModule):
 
 
     def compute_cl_loss(self, features, positive_features, labels=None,):
-        
+        # BUG: TODO: Should dot product with itself not positive
         features = F.normalize(features, dim=1)
         positive_features = F.normalize(positive_features, dim=1)
 
