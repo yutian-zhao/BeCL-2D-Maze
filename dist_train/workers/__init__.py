@@ -55,6 +55,14 @@ def synchronous_worker(rank, config, settings):
     # CHANGE:
     try_until_success(rank, settings)
 
+    # Create a distributed process so the workers can share gradients and other such things
+    # dist.init_process_group(
+    #     backend='gloo',
+    #     init_method=f'tcp://127.0.0.1:{settings.port}',
+    #     rank=rank,
+    #     world_size=settings.N
+    # )
+
     if 'seed' in config.keys():
         seed = config['seed']
         print(f"Set random seed to {seed}")
@@ -64,7 +72,7 @@ def synchronous_worker(rank, config, settings):
         np.random.seed(seed)
         random.seed(seed)
 
-    print('Rank {:02d} worker successfully initiated the distributed process group!'.format(rank), flush=True)
+    print(f'Rank {rank} worker successfully initiated the distributed process group at port {settings.port}!', flush=True)
 
     train_type = config['train_type']
 

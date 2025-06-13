@@ -64,6 +64,7 @@ class EndpointDiscriminator(Discriminator):
         if reg_loss is not None:
             # TODO: change lambda later, because use whole eps, length should be the same
             return torch.exp(-loss) - 0.1*torch.exp(-reg_loss)
+            # return reg_loss
         else:
             return torch.exp(-loss)
         
@@ -97,19 +98,25 @@ class EndpointDiscriminator(Discriminator):
         candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
             -1, pick_one_positive_sample_idx, 1
         ).bool()
-        # strict
-        mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
+        if self.mode == "strict":
+            mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
+        else:
+            # TODO: NOTE: the meaning of default is misused
+            mask = labels & (~candidate_mask)
+
         similarity_matrix.masked_fill_(mask, float("-inf"))
 
         # NOTE: len is not B now
         has_positive = torch.sum(candidate_mask, dim=-1)!=0
         similarity_matrix = similarity_matrix[has_positive]
         pick_one_positive_sample_idx = pick_one_positive_sample_idx[has_positive]
+        # intr_reward = torch.gather(similarity_matrix, -1, pick_one_positive_sample_idx).squeeze()
 
         classes = pick_one_positive_sample_idx.squeeze()
 
         loss = F.cross_entropy(similarity_matrix, classes, reduction="none")
         
+        # return loss, intr_reward
         return loss, None
 
 

@@ -39,6 +39,9 @@ def open_experiment(apply_time_machine=True):
                         help='Flag to enable saving model parameters separately for each checkpoint')
 
     parser.add_argument('--exp_name', type=str, default='', help='exp to continue')
+
+    parser.add_argument('--port', type=int, default=43200,
+                        help='port number for distributed training')
                         
     args = parser.parse_args()
 
