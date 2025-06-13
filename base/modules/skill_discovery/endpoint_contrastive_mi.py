@@ -15,9 +15,9 @@ class EndpointDiscriminator(Discriminator):
             assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-"]
         super().__init__(*args, **kwargs)
 
-        self.input_normalizer = Normalizer(self.state_size * 2) if self.normalize_inputs else nn.Sequential()
+        self.input_normalizer = Normalizer(self.state_size) if self.normalize_inputs else nn.Sequential()
         self.layers = create_nn(
-            input_size=self.state_size * 2,
+            input_size=self.state_size,
             output_size=self.n,
             hidden_size=self.hidden_size,
             num_layers=self.num_layers,
@@ -63,16 +63,15 @@ class EndpointDiscriminator(Discriminator):
         loss, reg_loss = self.compute_cl_loss(batch)
         if reg_loss is not None:
             # TODO: change lambda later, because use whole eps, length should be the same
-            return torch.exp(-loss) - torch.exp(-reg_loss)
+            return torch.exp(-loss) - 0.1*torch.exp(-reg_loss)
         else:
             return torch.exp(-loss)
-
+        
     def compute_cl_loss(self, batch):
-        # s0, st
-        B = batch["next_state"].size(0)
+        # s_{t-1}, st
         skill_len = self.traj_length_each_episode  # overload
         next_states = batch["next_state"]
-        initial_idx = [*range(0, B, skill_len)]
+        states = batch["state"]
 
         labels = batch["skill"]
         labels = labels.unsqueeze(0) == labels.unsqueeze(1)
@@ -82,27 +81,12 @@ class EndpointDiscriminator(Discriminator):
         t_mask = t_mask % skill_len
         t_mask = t_mask.unsqueeze(0) == t_mask.unsqueeze(1)
 
-        # I(S,S)
-        # if hasattr(self, 'reg_layers'):
-        #     next_state_features = batch["next_state"]
-        #     for layer in self.reg_layers:
-        #         next_state_features = layer(next_state_features)
-        #     # TODO: compute_info_nce_loss # strict true negtives only NOT strict for positives
-        #     # compute_surprisal # s_t,g
-        #     reg_loss = self.compute_info_nce_loss(next_state_features, batch["skill"]).squeeze()
-        # else:
-        #     reg_loss = None
-
-        initials = batch["state"][initial_idx]
-        expanded_initials = (
-            torch.unsqueeze(initials, dim=1).expand(-1, skill_len, -1).reshape(-1, initials.shape[-1])
-        )
-        features = torch.cat([expanded_initials, next_states], dim=-1)
-
         for layer in self.layers:
-            features = layer(features)
-        features = F.normalize(features, dim=1)
-        similarity_matrix = torch.matmul(features, features.T) / self.temperature
+            next_states = layer(next_states)
+            states = layer(states)
+
+        delta = F.normalize(next_states-states, dim=-1)
+        similarity_matrix = torch.matmul(delta, delta.T) / self.temperature
         # similarity_matrix -= torch.max(similarity_matrix, 1)[0][:, None]
 
         assert not(torch.isnan(similarity_matrix).any() or torch.isinf(similarity_matrix).any())
@@ -113,116 +97,178 @@ class EndpointDiscriminator(Discriminator):
         candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
             -1, pick_one_positive_sample_idx, 1
         ).bool()
-
-        # similarity_matrix.masked_fill_(self_mask, float("-inf")))
-        # similarity_matrix.masked_fill_(labels&(~candidate_mask), float("-inf"))
-        # similarity_matrix.masked_fill_(t_mask&(~candidate_mask), float("-inf"))
-        # TODO: CHANGE: need to check this
+        # strict
         mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
         similarity_matrix.masked_fill_(mask, float("-inf"))
 
         # NOTE: len is not B now
         has_positive = torch.sum(candidate_mask, dim=-1)!=0
-        candidate_mask = candidate_mask[has_positive]
         similarity_matrix = similarity_matrix[has_positive]
         pick_one_positive_sample_idx = pick_one_positive_sample_idx[has_positive]
 
         classes = pick_one_positive_sample_idx.squeeze()
-        # classes = torch.arange(labels.size(1), device=labels.device)[initial_idx]
 
         loss = F.cross_entropy(similarity_matrix, classes, reduction="none")
         
-        # I(S_0,S_t;G) self
-        # if hasattr(self, 'reg_layers'):
-        #     features = torch.cat([expanded_initials, next_states], dim=-1)
-        #     terminal_idx = [*range(skill_len - 1, B, skill_len)]  # assume dividable
-        #     if len(terminal_idx) < len(initial_idx):
-        #         terminal_idx.append(B - 1)
-        #     terminals = batch["next_state"][terminal_idx]
-        #     expanded_terminals = (
-        #         torch.unsqueeze(terminals, dim=1).expand(-1, skill_len, -1).reshape(-1, terminals.shape[-1])
-        #     )
-        #     # TODO: may have problem
-        #     # reg_loss = self.compute_reg_loss(features, labels=batch["skill"], positives=expanded_terminals)
+        return loss, None
 
-        #     # I(S_0,S_t;G)
-        #     s_mask = torch.arange(labels.shape[0], dtype=int)
-        #     s_mask = s_mask // skill_len
-        #     other_s_mask = s_mask.unsqueeze(0) != s_mask.unsqueeze(1)
-        #     reg_candidate_mask = labels * other_s_mask
-        #     reg_candidate_mask = reg_candidate_mask.long()
-        #     # has_no_postive = torch.sum(reg_candidate_mask, dim=-1)==0
-        #     # # TODO: is there a skill has no positve
-        #     # assert torch.sum(has_no_postive.int()) <= 5*skill_len
-        #     # if has_no_postive.any():
-        #     #     reg_candidate_mask[has_no_postive, -1] = 1
-        #     reg_random_max = (labels) * (1 + torch.rand_like(reg_candidate_mask, dtype=torch.float))
-        #     reg_positive_idx = torch.argmax(reg_random_max, dim=-1)
-        #     reg_postives = expanded_terminals[reg_positive_idx]
-        #     reg_loss = self.compute_reg_loss(features, labels=batch["skill"], positives=reg_postives)
-        # I(S_0,S_t;S_t) self
-        if hasattr(self, 'reg_layers'):
-            reg_next_states = batch["next_state"]
-            reg_initials_states = torch.cat([expanded_initials, next_states], dim=-1)
-            for layer in self.reg_layers:
-                reg_initials_states = layer(reg_initials_states)
-            reg_initials_states = F.normalize(reg_initials_states, dim=1)
 
-            for layer in self.reg_layers2:
-                reg_next_states = layer(reg_next_states)
-            reg_next_states = F.normalize(reg_next_states, dim=1)
+    # def compute_cl_loss(self, batch):
+    #     # s0, st
+    #     B = batch["next_state"].size(0)
+    #     skill_len = self.traj_length_each_episode  # overload
+    #     next_states = batch["next_state"]
+    #     initial_idx = [*range(0, B, skill_len)]
 
-            reg_similarity_matrix = (
-                torch.matmul(reg_initials_states, reg_next_states.T) / self.temperature
-            )
-            reg_similarity_matrix.masked_fill_(mask, float("-inf"))
-            reg_similarity_matrix = reg_similarity_matrix[has_positive]
-            reg_loss = F.cross_entropy(reg_similarity_matrix, classes, reduction="none")
-        else:
-            reg_loss = None
+    #     labels = batch["skill"]
+    #     labels = labels.unsqueeze(0) == labels.unsqueeze(1)
+    #     self_mask = torch.eye(labels.shape[0], dtype=torch.bool)
 
-        return loss, reg_loss
+    #     t_mask = torch.arange(labels.shape[0]).to(labels.device)
+    #     t_mask = t_mask % skill_len
+    #     t_mask = t_mask.unsqueeze(0) == t_mask.unsqueeze(1)
 
-    def compute_reg_loss(
-        self,
-        features,
-        labels,
-        positives=None,
-    ):
-        # NOTE: features are states
-        # NOTE: positive should be features usually
-        for layer in self.reg_layers:
-            features = layer(features)
+    #     # I(S,S)
+    #     # if hasattr(self, 'reg_layers'):
+    #     #     next_state_features = batch["next_state"]
+    #     #     for layer in self.reg_layers:
+    #     #         next_state_features = layer(next_state_features)
+    #     #     # TODO: compute_info_nce_loss # strict true negtives only NOT strict for positives
+    #     #     # compute_surprisal # s_t,g
+    #     #     reg_loss = self.compute_info_nce_loss(next_state_features, batch["skill"]).squeeze()
+    #     # else:
+    #     #     reg_loss = None
 
-        if positives is None:
-            positives = features
-        else:
-            for layer in self.reg_layers2:
-                positives = layer(positives)
+    #     initials = batch["state"][initial_idx]
+    #     expanded_initials = (
+    #         torch.unsqueeze(initials, dim=1).expand(-1, skill_len, -1).reshape(-1, initials.shape[-1])
+    #     )
+    #     features = torch.cat([expanded_initials, next_states], dim=-1)
 
-        features = F.normalize(features, dim=1)
-        positives = F.normalize(positives, dim=1)
+    #     for layer in self.layers:
+    #         features = layer(features)
+    #     features = F.normalize(features, dim=1)
+    #     similarity_matrix = torch.matmul(features, features.T) / self.temperature
+    #     # similarity_matrix -= torch.max(similarity_matrix, 1)[0][:, None]
 
-        # Compute logits (scaled dot product)
-        logits = torch.matmul(features, positives.T) / self.temperature  # shape: (B, B)
-        assert not (torch.isnan(logits).any() or torch.isinf(logits).any())
+    #     assert not(torch.isnan(similarity_matrix).any() or torch.isinf(similarity_matrix).any())
 
-        # Labels: positive samples are diagonal
-        classes = torch.arange(logits.size(0), device=logits.device)
+    #     candidate_mask = (labels & t_mask & (~self_mask)).int()
+    #     random_max = candidate_mask * (1 + torch.rand_like(candidate_mask, dtype=torch.float, device=candidate_mask.device))
+    #     pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
+    #     candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
+    #         -1, pick_one_positive_sample_idx, 1
+    #     ).bool()
 
-        # mask out negative pairs
-        if self.mode == "strict":
-            mask = (labels.unsqueeze(0) != labels.unsqueeze(1)).to(features.device)
-            logits.masked_fill_(mask, float("-inf"))
-        elif self.mode == "strict_s-":
-            mask = (labels.unsqueeze(0) == labels.unsqueeze(1)).fill_diagonal_(0).to(features.device)
-            logits.masked_fill_(mask, float("-inf"))
+    #     # similarity_matrix.masked_fill_(self_mask, float("-inf")))
+    #     # similarity_matrix.masked_fill_(labels&(~candidate_mask), float("-inf"))
+    #     # similarity_matrix.masked_fill_(t_mask&(~candidate_mask), float("-inf"))
+    #     # TODO: CHANGE: need to check this
+    #     mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
+    #     similarity_matrix.masked_fill_(mask, float("-inf"))
 
-        # Contrastive loss (InfoNCE)
-        loss = F.cross_entropy(logits, classes, reduction="none")
+    #     # NOTE: len is not B now
+    #     has_positive = torch.sum(candidate_mask, dim=-1)!=0
+    #     candidate_mask = candidate_mask[has_positive]
+    #     similarity_matrix = similarity_matrix[has_positive]
+    #     pick_one_positive_sample_idx = pick_one_positive_sample_idx[has_positive]
 
-        return loss
+    #     classes = pick_one_positive_sample_idx.squeeze()
+    #     # classes = torch.arange(labels.size(1), device=labels.device)[initial_idx]
 
+    #     loss = F.cross_entropy(similarity_matrix, classes, reduction="none")
+        
+    #     # I(S_0,S_t;G) self
+    #     # if hasattr(self, 'reg_layers'):
+    #     #     features = torch.cat([expanded_initials, next_states], dim=-1)
+    #     #     terminal_idx = [*range(skill_len - 1, B, skill_len)]  # assume dividable
+    #     #     if len(terminal_idx) < len(initial_idx):
+    #     #         terminal_idx.append(B - 1)
+    #     #     terminals = batch["next_state"][terminal_idx]
+    #     #     expanded_terminals = (
+    #     #         torch.unsqueeze(terminals, dim=1).expand(-1, skill_len, -1).reshape(-1, terminals.shape[-1])
+    #     #     )
+    #     #     # TODO: may have problem
+    #     #     # reg_loss = self.compute_reg_loss(features, labels=batch["skill"], positives=expanded_terminals)
+
+    #     #     # I(S_0,S_t;G)
+    #     #     s_mask = torch.arange(labels.shape[0], dtype=int)
+    #     #     s_mask = s_mask // skill_len
+    #     #     other_s_mask = s_mask.unsqueeze(0) != s_mask.unsqueeze(1)
+    #     #     reg_candidate_mask = labels * other_s_mask
+    #     #     reg_candidate_mask = reg_candidate_mask.long()
+    #     #     # has_no_postive = torch.sum(reg_candidate_mask, dim=-1)==0
+    #     #     # # TODO: is there a skill has no positve
+    #     #     # assert torch.sum(has_no_postive.int()) <= 5*skill_len
+    #     #     # if has_no_postive.any():
+    #     #     #     reg_candidate_mask[has_no_postive, -1] = 1
+    #     #     reg_random_max = (labels) * (1 + torch.rand_like(reg_candidate_mask, dtype=torch.float))
+    #     #     reg_positive_idx = torch.argmax(reg_random_max, dim=-1)
+    #     #     reg_postives = expanded_terminals[reg_positive_idx]
+    #     #     reg_loss = self.compute_reg_loss(features, labels=batch["skill"], positives=reg_postives)
+    #     # I(S_0,S_t;S_t) self
+    #     if hasattr(self, 'reg_layers'):
+    #         reg_next_states = batch["next_state"]
+    #         reg_initials_states = torch.cat([expanded_initials, next_states], dim=-1)
+    #         for layer in self.reg_layers:
+    #             reg_initials_states = layer(reg_initials_states)
+    #         reg_initials_states = F.normalize(reg_initials_states, dim=1)
+
+    #         for layer in self.reg_layers2:
+    #             reg_next_states = layer(reg_next_states)
+    #         reg_next_states = F.normalize(reg_next_states, dim=1)
+
+    #         reg_similarity_matrix = (
+    #             torch.matmul(reg_initials_states, reg_next_states.T) / self.temperature
+    #         )
+    #         reg_similarity_matrix.masked_fill_(mask, float("-inf"))
+    #         reg_similarity_matrix = reg_similarity_matrix[has_positive]
+    #         reg_loss = F.cross_entropy(reg_similarity_matrix, classes, reduction="none")
+    #     else:
+    #         reg_loss = None
+
+    #     return loss, reg_loss
+#############################################################################################
+    # def compute_reg_loss(
+    #     self,
+    #     features,
+    #     labels,
+    #     positives=None,
+    # ):
+    #     # NOTE: features are states
+    #     # NOTE: positive should be features usually
+    #     for layer in self.reg_layers:
+    #         features = layer(features)
+
+    #     if positives is None:
+    #         positives = features
+    #     else:
+    #         for layer in self.reg_layers2:
+    #             positives = layer(positives)
+
+    #     features = F.normalize(features, dim=1)
+    #     positives = F.normalize(positives, dim=1)
+
+    #     # Compute logits (scaled dot product)
+    #     logits = torch.matmul(features, positives.T) / self.temperature  # shape: (B, B)
+    #     assert not (torch.isnan(logits).any() or torch.isinf(logits).any())
+
+    #     # Labels: positive samples are diagonal
+    #     classes = torch.arange(logits.size(0), device=logits.device)
+
+    #     # mask out negative pairs
+    #     if self.mode == "strict":
+    #         mask = (labels.unsqueeze(0) != labels.unsqueeze(1)).to(features.device)
+    #         logits.masked_fill_(mask, float("-inf"))
+    #     elif self.mode == "strict_s-":
+    #         mask = (labels.unsqueeze(0) == labels.unsqueeze(1)).fill_diagonal_(0).to(features.device)
+    #         logits.masked_fill_(mask, float("-inf"))
+
+    #     # Contrastive loss (InfoNCE)
+    #     loss = F.cross_entropy(logits, classes, reduction="none")
+
+    #     return loss
+############################################################################
     # def compute_cl_loss(self, batch):
     #     # s0, g
     #     B = batch["next_state"].size(0)
@@ -456,7 +502,7 @@ class EndpointDiscriminator(Discriminator):
 
     #     return loss, reg_loss
 
-
+###################################################################################
     # def compute_cl_loss(self, batch):
     #     # I(s0, (s0, st);st)
     #     B = batch["next_state"].size(0)
