@@ -501,6 +501,18 @@ class OnPolicyManager:
         stats, episodes = self.eval_wrapper()
         self.log_eval_results(stats, episodes)
 
+        # CHANGE: plot when eval
+        if self.rank == 0 and self.curr_epoch%2 == 1:
+            import matplotlib.pyplot as plt 
+            from result_inspection.toy_maze import plot_all_skills
+            start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5]]
+            start_state = torch.tensor(start_state)
+            for i, s in enumerate(start_state):
+                skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=s))
+                cmap = plt.get_cmap('tab20')
+                ax = plot_all_skills(None, cmap, notebook_mode=False, agent=self.agent_model.agent, **skill_kwargs)  # NOTE: sample 20 trajs for each skill
+                plt.savefig(os.path.join(self.exp_dir, f'epoch_{self.curr_epoch}_{i}.png'))
+
         if self.rank == 0:
             self.checkpoint()
 

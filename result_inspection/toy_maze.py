@@ -66,8 +66,8 @@ def play_episode(agent, skill, do_eval, reset_dict={}):
         agent.step(do_eval)
 
 
-def _plot_all_skills(exp, cmap, ax=None, reset_dict=None, alpha=1., linewidth=1.):
-    agent = exp.learner.agent
+def _plot_all_skills(exp, cmap, ax=None, reset_dict=None, alpha=1., linewidth=1., agent=None):
+    # agent = exp.learner.agent
     agent.env.maze.plot(ax)
 
     if reset_dict is None:
@@ -83,7 +83,7 @@ def _plot_all_skills(exp, cmap, ax=None, reset_dict=None, alpha=1., linewidth=1.
     ax.plot(agent.rollout[0][0], agent.rollout[1][0], marker='o', markersize=8, color='black', zorder=11)
 
 
-def plot_all_skills(exp, cmap, ax=None, reset_dict=None, notebook_mode=True, desc=None, figsize=(5, 5), **kwargs):
+def plot_all_skills(exp, cmap, ax=None, reset_dict=None, notebook_mode=True, desc=None, figsize=(5, 5), agent=None,**kwargs):
     desc = desc or "Trajectories"
     tqdm_ = tqdm_notebook if notebook_mode else tqdm
 
@@ -94,7 +94,7 @@ def plot_all_skills(exp, cmap, ax=None, reset_dict=None, notebook_mode=True, des
         return_ax = False
 
     for _ in tqdm_(range(NUM_TRAJECTORIES), desc=desc, disable=False, leave=True, total=NUM_TRAJECTORIES):
-        _plot_all_skills(exp, cmap, ax, reset_dict=reset_dict, **TRAJECTORY_KWARGS)
+        _plot_all_skills(exp, cmap, ax, reset_dict=reset_dict, agent=agent,**TRAJECTORY_KWARGS)
 
     config_subplot(ax, exp=exp, **kwargs)
 
