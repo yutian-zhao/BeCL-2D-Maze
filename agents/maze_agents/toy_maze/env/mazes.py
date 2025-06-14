@@ -524,7 +524,7 @@ segments_empty = [
 # _walls_to_remove_empty = [((0.5, -0.5), (4.5,-0.5)), ((0.5, -1.5), (4.5,-1.5)), ((0.5, -2.5), (4.5,-2.5)), ((0.5, -3.5), (4.5,-3.5))]
 
 _walls_to_remove_empty = [((x, x+1), (y, y)) for x in [0.5, 1.5, 2.5, 3.5] for y in [-0.5, -1.5, -2.5, -3.5]]
-mazes_dict['square_empty'] = {'maze': Maze(*segments_empty, goal_squares=['e2', 'e3'], walls_to_remove=_walls_to_remove_empty), 'action_range': 0.3}
+mazes_dict['square_empty'] = {'maze': Maze(*segments_empty, goal_squares=['e2', 'e3'], walls_to_remove=_walls_to_remove_empty), 'action_range': 0.95}
 
 segments_a = [
     dict(name='A', anchor='origin', direction='down', times=4),
