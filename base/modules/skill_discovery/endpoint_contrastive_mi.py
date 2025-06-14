@@ -15,9 +15,9 @@ class EndpointDiscriminator(Discriminator):
             assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-"]
         super().__init__(*args, **kwargs)
 
-        self.input_normalizer = Normalizer(self.state_size*2) if self.normalize_inputs else nn.Sequential()
+        self.input_normalizer = Normalizer(self.state_size) if self.normalize_inputs else nn.Sequential()
         self.layers = create_nn(
-            input_size=self.state_size*2,
+            input_size=self.state_size,
             output_size=self.n,
             hidden_size=self.hidden_size,
             num_layers=self.num_layers,

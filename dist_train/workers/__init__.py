@@ -53,15 +53,18 @@ def synchronous_worker(rank, config, settings):
     """Create a worker to play episodes on a given port and send the results to the trainer"""
     # Create a distributed process so the workers can share gradients and other such things
     # CHANGE:
-    ip = try_until_success(rank, settings)
+    ip = settings.port
 
     # Create a distributed process so the workers can share gradients and other such things
-    # dist.init_process_group(
-    #     backend='gloo',
-    #     init_method=f'tcp://127.0.0.1:{settings.port}',
-    #     rank=rank,
-    #     world_size=settings.N
-    # )
+    try:
+        dist.init_process_group(
+            backend='gloo',
+            init_method=f'tcp://127.0.0.1:{ip}',
+            rank=rank,
+            world_size=settings.N
+        )
+    except Exception as e:
+        ip = try_until_success(rank, settings)
 
     if 'seed' in config.keys():
         seed = config['seed']
