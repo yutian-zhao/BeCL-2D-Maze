@@ -25,8 +25,8 @@ class CircleMaze:
     def plot(self, ax=None):
         if ax is None:
             _, ax = plt.subplots(1, 1, figsize=(5, 4))
-        if ax is None:
-            _, ax = plt.subplots(1, 1, figsize=(5, 4))
+        # if ax is None:
+        #     _, ax = plt.subplots(1, 1, figsize=(5, 4))
         rads = np.linspace(self.stop_t * 2 * np.pi, (1 - self.stop_t) * 2 * np.pi)
         xs_i = (1 - self.ring_r) * np.cos(rads)
         ys_i = (1 - self.ring_r) * np.sin(rads)
@@ -268,6 +268,26 @@ class Maze:
         shift = np.random.uniform(low=-0.5, high=0.5, size=(2,))
         loc = square_loc + shift
         return loc[0], loc[1]
+    
+    def sample_random_start(self, min_wall_dist=None):
+        if min_wall_dist is None:
+            min_wall_dist = 0.05
+        else:
+            min_wall_dist = min_wall_dist
+
+        segment_keys = list(self._segments.keys())
+        square_id = segment_keys[np.random.randint(low=0, high=len(segment_keys))]
+        square_loc = self._segments[square_id]['loc']
+
+        while True:
+            # Q: Why use random uniform here? should try all directions with longest movement
+            shift = np.random.uniform(low=-0.5, high=0.5, size=(2,))
+            loc = square_loc + shift
+            dist_checker = np.array([min_wall_dist, min_wall_dist]) * np.sign(shift)
+            stopped_loc = self.move(loc, dist_checker)
+            if float(np.sum(np.abs((loc + dist_checker) - stopped_loc))) == 0.0:
+                break
+        return loc[0], loc[1]
 
     def sample_start(self):
         min_wall_dist = 0.05
@@ -485,6 +505,26 @@ def make_u_maze(corridor_length):
 mazes_dict = dict()
 
 mazes_dict['circle'] = {'maze': CircleMaze(), 'action_range': 0.25}
+
+# A     E1    C3
+# A0    E0    C2
+# A1 D0 D1    C1
+# A2          C0
+# A3 B0 B1 B2 B3
+
+segments_empty = [
+    dict(name='A', anchor='origin', direction='down', times=4),
+    dict(name='B', anchor='origin', direction='right', times=4),
+    dict(name='C', anchor='A0', direction='right', times=4),
+    dict(name='D', anchor='A1', direction='right', times=4),
+    dict(name='E', anchor='A2', direction='right', times=4),
+    dict(name='F', anchor='A3', direction='right', times=4),
+]
+
+# _walls_to_remove_empty = [((0.5, -0.5), (4.5,-0.5)), ((0.5, -1.5), (4.5,-1.5)), ((0.5, -2.5), (4.5,-2.5)), ((0.5, -3.5), (4.5,-3.5))]
+
+_walls_to_remove_empty = [((x, x+1), (y, y)) for x in [0.5, 1.5, 2.5, 3.5] for y in [-0.5, -1.5, -2.5, -3.5]]
+mazes_dict['square_empty'] = {'maze': Maze(*segments_empty, goal_squares=['e2', 'e3'], walls_to_remove=_walls_to_remove_empty), 'action_range': 0.95}
 
 segments_a = [
     dict(name='A', anchor='origin', direction='down', times=4),
