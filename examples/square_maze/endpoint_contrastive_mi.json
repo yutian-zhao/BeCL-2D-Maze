@@ -2,7 +2,7 @@
   "learner_type": "EndpointContrastiveMI",
   "agent_type": "maze",
   "train_type": "ppo",
-  "seed": 24,
+  "seed": 37,
   "use_wandb": true,
   "use_tb": false,
   "norm_advantage": true,
@@ -18,7 +18,9 @@
       "n": 5,
       "maze_type": "square_empty",
       "done_on_success": false,
-      "random_start": true
+      "random_start": true,
+      "action_range": 0.3,
+      "min_wall_dist": 1.7
     },
     "device": "cpu",
     "mode": "default",
@@ -40,7 +42,7 @@
       "lambda": 1,
       "model_params": {
         "traj_length_each_episode": 5,
-        "temperature": 0.5
+        "temperature": 1
       }
     }
   }

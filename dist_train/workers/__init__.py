@@ -43,17 +43,17 @@ def try_until_success(rank, settings, max_retries=10):
                 rank=rank,
                 world_size=settings.N
             ) 
-            return 
+            return "432" + str(ip)
         except Exception as e:
             attempts += 1
             if attempts >= max_retries:
-                raise
+                raise e
 
 def synchronous_worker(rank, config, settings):
     """Create a worker to play episodes on a given port and send the results to the trainer"""
     # Create a distributed process so the workers can share gradients and other such things
     # CHANGE:
-    try_until_success(rank, settings)
+    ip = try_until_success(rank, settings)
 
     # Create a distributed process so the workers can share gradients and other such things
     # dist.init_process_group(
@@ -72,7 +72,7 @@ def synchronous_worker(rank, config, settings):
         np.random.seed(seed)
         random.seed(seed)
 
-    print(f'Rank {rank} worker successfully initiated the distributed process group at port {settings.port}!', flush=True)
+    print(f'Rank {rank} worker successfully initiated the distributed process group at port {ip}!', flush=True)
 
     train_type = config['train_type']
 

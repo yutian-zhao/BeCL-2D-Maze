@@ -185,6 +185,19 @@ def ppo_decorator(partial_agent_class):
                     batched_episode = self.relabel_episode(for_aux=for_aux)
 
                 self.add_to_mini_buffer(batched_episode)
+                # CHANGE: avoid relabeling
+                # if not for_aux:
+                # # relabel in here 
+                #     self.relabel_episode() # add intrinsic reward
+                #     batched_episode = {k: v.detach() for k, v in self.compress_episode().items()} # NOTE: batch_ep
+                #     self.add_to_mini_buffer(batched_episode)
+                # else:
+                #     assert len(self._compress_me) == 1
+                #     batched_episode = {"next_state": torch.stack([dct["next_state"] for dct in self._compress_me[0]])}
+                #     batched_episode["state"] = torch.stack([dct["state"] for dct in self._compress_me[0]])
+                #     batched_episode["skill"] = torch.stack([dct["skill"] for dct in self._compress_me[0]])
+                #     self._batched_ep = batched_episode
+                #     self.add_to_mini_buffer(batched_episode)
             self.fill_epoch_transitions()  # NOTE: from mini_buffer to _epoch_transitions
 
         def _batch_episode(self, ep):

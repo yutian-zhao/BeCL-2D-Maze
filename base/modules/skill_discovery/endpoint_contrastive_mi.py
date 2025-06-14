@@ -15,9 +15,9 @@ class EndpointDiscriminator(Discriminator):
             assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-"]
         super().__init__(*args, **kwargs)
 
-        self.input_normalizer = Normalizer(self.state_size) if self.normalize_inputs else nn.Sequential()
+        self.input_normalizer = Normalizer(self.state_size*2) if self.normalize_inputs else nn.Sequential()
         self.layers = create_nn(
-            input_size=self.state_size,
+            input_size=self.state_size*2,
             output_size=self.n,
             hidden_size=self.hidden_size,
             num_layers=self.num_layers,
@@ -99,10 +99,11 @@ class EndpointDiscriminator(Discriminator):
             -1, pick_one_positive_sample_idx, 1
         ).bool()
         if self.mode == "strict":
-            mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
+            mask = torch.logical_or(~t_mask, labels)
         else:
             # TODO: NOTE: the meaning of default is misused
-            mask = labels & (~candidate_mask)
+            mask = labels
+        mask = torch.logical_or(mask, self_mask) & (~candidate_mask)
 
         similarity_matrix.masked_fill_(mask, float("-inf"))
 
@@ -119,7 +120,7 @@ class EndpointDiscriminator(Discriminator):
         # return loss, intr_reward
         return loss, None
 
-
+################################################################################
     # def compute_cl_loss(self, batch):
     #     # s0, st
     #     B = batch["next_state"].size(0)
@@ -171,7 +172,9 @@ class EndpointDiscriminator(Discriminator):
     #     # similarity_matrix.masked_fill_(labels&(~candidate_mask), float("-inf"))
     #     # similarity_matrix.masked_fill_(t_mask&(~candidate_mask), float("-inf"))
     #     # TODO: CHANGE: need to check this
-    #     mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
+    #     # mask = torch.logical_or(~t_mask, labels) & (~candidate_mask)
+    #     mask = labels 
+    #     mask = torch.logical_or(mask, self_mask) & (~candidate_mask)
     #     similarity_matrix.masked_fill_(mask, float("-inf"))
 
     #     # NOTE: len is not B now
@@ -313,6 +316,7 @@ class EndpointDiscriminator(Discriminator):
     #     labels = batch["skill"]
     #     labels = labels.unsqueeze(0) == labels.unsqueeze(1)
     #     diag = torch.eye(labels.shape[0], dtype=torch.bool)
+    #     # TODO: check this  
     #     labels[diag] = 0
     #     # other s
     #     s_mask = torch.arange(labels.shape[0], dtype=int).to(labels.device)
@@ -359,6 +363,10 @@ class EndpointDiscriminator(Discriminator):
 
     #     similarity_matrix.masked_fill_(mask, float("-inf"))
 
+    #     has_positive = torch.sum(candidate_mask, dim=-1)!=0
+    #     similarity_matrix = similarity_matrix[has_positive]
+    #     pick_one_positive_sample_idx = pick_one_positive_sample_idx[has_positive]
+
     #     classes = pick_one_positive_sample_idx.squeeze()
     #     # classes = torch.arange(labels.size(1), device=labels.device)[initial_idx]
 
@@ -382,7 +390,10 @@ class EndpointDiscriminator(Discriminator):
     #         reg_similarity_matrix = torch.matmul(reg_initial_terminals, reg_expanded_terminals.T) / self.temperature
 
     #         reg_similarity_matrix.masked_fill_(mask, float("-inf"))
+    #         reg_similarity_matrix = reg_similarity_matrix[has_positive]
     #         reg_loss = F.cross_entropy(reg_similarity_matrix, classes, reduction="none")
+    #     else:
+    #         reg_loss = None
 
     #     return loss, reg_loss
 #########################################################################################
@@ -400,6 +411,7 @@ class EndpointDiscriminator(Discriminator):
     #     labels = batch["skill"]
     #     labels = labels.unsqueeze(0) == labels.unsqueeze(1)
     #     diag = torch.eye(labels.shape[0], dtype=torch.bool)
+    #     # TODO: Check this
     #     labels[diag] = 0
     #     # other s
     #     s_mask = torch.arange(labels.shape[0], dtype=int).to(labels.device)
@@ -539,7 +551,8 @@ class EndpointDiscriminator(Discriminator):
     #         # strict: negative initial_terminal pairs only
     #         mask = torch.logical_or(~t_mask, labels)
     #     elif self.mode == "default":
-    #         mask = t_mask
+    #         # mask = t_mask
+    #         mask = labels
     #     elif self.mode == "strict_s+_s-":
     #         # mask out positive pairs from other trajectories
     #         mask = (~s_mask) & labels
