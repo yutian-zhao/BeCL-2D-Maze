@@ -505,7 +505,8 @@ class OnPolicyManager:
         if self.rank == 0 and self.curr_epoch%2 == 1:
             import matplotlib.pyplot as plt 
             from result_inspection.toy_maze import plot_all_skills
-            start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5]]
+            start_state = [[1.2, -1.2], [2.8, -1.2], [2, -2], [1.2, -2.8]]
+            # start_state = [[0., -0.5], [0, -2], [2, -0.5], [4, -0.5]]
             start_state = torch.tensor(start_state)
             for i, s in enumerate(start_state):
                 skill_kwargs = dict(figsize=(5,5), reset_dict=dict(state=s))
