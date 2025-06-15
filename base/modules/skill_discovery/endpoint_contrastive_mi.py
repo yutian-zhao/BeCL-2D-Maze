@@ -12,7 +12,7 @@ class EndpointDiscriminator(Discriminator):
     def __init__(self, *args, mode=None, use_reg=False, **kwargs):
         self.mode = mode
         if self.mode:  # default is ""
-            assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-"]
+            assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-", "gs-", "gs+", "g", "s+", "s-", "s"]
         super().__init__(*args, **kwargs)
 
         self.input_normalizer = Normalizer(self.state_size) if self.normalize_inputs else nn.Sequential()
@@ -70,6 +70,7 @@ class EndpointDiscriminator(Discriminator):
         
     def compute_cl_loss(self, batch):
         # s_{t-1}, st
+        B = batch["next_state"].size(0)
         skill_len = self.traj_length_each_episode  # overload
         next_states = batch["next_state"]
         states = batch["state"]
@@ -93,15 +94,23 @@ class EndpointDiscriminator(Discriminator):
         assert not(torch.isnan(similarity_matrix).any() or torch.isinf(similarity_matrix).any())
 
         if self.mode == 'strict_s+':
-            B = batch["next_state"].size(0)
             idx = (torch.arange(B) // skill_len + 1) * skill_len - 1
             # NOTE: for incomplete skill
             pick_one_positive_sample_idx = torch.minimum(idx, torch.ones_like(idx) * (B - 1)).view(-1, 1)
             candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
                 -1, pick_one_positive_sample_idx, 1
             ).bool()
+        elif self.mode == "gs-":
+            initial_mask = torch.zeros_like(labels, dtype=bool).to(labels.device)
+            initial_mask[:, torch.arange(0, B, skill_len, dtype=int)] = True
+            candidate_mask = (labels & initial_mask & (~self_mask)).int()
+            random_max = candidate_mask * (1 + torch.rand_like(candidate_mask, dtype=torch.float, device=candidate_mask.device))
+            pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
+            candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
+                -1, pick_one_positive_sample_idx, 1
+            ).bool()
         else:
-            candidate_mask = (labels & t_mask & (~self_mask)).int()
+            candidate_mask = (labels & (~self_mask)).int() # & t_mask 
             random_max = candidate_mask * (1 + torch.rand_like(candidate_mask, dtype=torch.float, device=candidate_mask.device))
             pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
             candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(

@@ -20,7 +20,7 @@ class EndpointContrastiveMILearner(ContrastiveMILearner):
         self.use_reg = use_reg
         self.mode = mode
         if self.mode:  # default is ""
-            assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-"]
+            assert self.mode in ["default", "strict", "strict_s+", "strict_s+_s-", "strict_s-_s+", "strict_s-", "gs-", "gs+", "g", "s+", "s-", "s"]
         super().__init__(*args, **kwargs)
 
     def _make_im_modules(self):
