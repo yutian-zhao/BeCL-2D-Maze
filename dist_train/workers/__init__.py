@@ -32,20 +32,21 @@ on_policy_algos = []  # (ignore PPO here; it is unique)
 off_policy_algos = ['sac']
 episodic_off_policy_algos = ['ddpg', 'dqn']
 
-def try_until_success(rank, settings, max_retries=10):
+def try_until_success(rank, settings, max_retries=99):
     attempts = 0
+    ip = 43200
     while attempts < max_retries:
         try:
-            ip = np.random.randint(10,99)
             dist.init_process_group(
                 backend='gloo',
-                init_method='tcp://127.0.0.1:432{}'.format(str(ip)),
+                init_method='tcp://127.0.0.1:{}'.format(str(ip)),
                 rank=rank,
                 world_size=settings.N
             ) 
-            return "432" + str(ip)
+            return str(ip)
         except Exception as e:
             attempts += 1
+            ip += 1
             if attempts >= max_retries:
                 raise e
 

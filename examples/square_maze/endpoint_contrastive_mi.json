@@ -2,7 +2,7 @@
   "learner_type": "EndpointContrastiveMI",
   "agent_type": "maze",
   "train_type": "ppo",
-  "seed": 37,
+  "seed": 42,
   "use_wandb": true,
   "use_tb": false,
   "norm_advantage": true,
@@ -23,7 +23,7 @@
       "min_wall_dist": 1.7
     },
     "device": "cpu",
-    "mode": "default",
+    "mode": "strict_s+",
     "use_reg": false,
     "skill_update_freq": 5,
     "aux_rollouts": 500,

@@ -92,12 +92,21 @@ class EndpointDiscriminator(Discriminator):
 
         assert not(torch.isnan(similarity_matrix).any() or torch.isinf(similarity_matrix).any())
 
-        candidate_mask = (labels & t_mask & (~self_mask)).int()
-        random_max = candidate_mask * (1 + torch.rand_like(candidate_mask, dtype=torch.float, device=candidate_mask.device))
-        pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
-        candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
-            -1, pick_one_positive_sample_idx, 1
-        ).bool()
+        if self.mode == 'strict_s+':
+            B = batch["next_state"].size(0)
+            idx = (torch.arange(B) // skill_len + 1) * skill_len - 1
+            # NOTE: for incomplete skill
+            pick_one_positive_sample_idx = torch.minimum(idx, torch.ones_like(idx) * (B - 1)).view(-1, 1)
+            candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
+                -1, pick_one_positive_sample_idx, 1
+            ).bool()
+        else:
+            candidate_mask = (labels & t_mask & (~self_mask)).int()
+            random_max = candidate_mask * (1 + torch.rand_like(candidate_mask, dtype=torch.float, device=candidate_mask.device))
+            pick_one_positive_sample_idx = torch.argmax(random_max, dim=-1, keepdim=True)
+            candidate_mask = torch.zeros_like(labels, device=labels.device).scatter_(
+                -1, pick_one_positive_sample_idx, 1
+            ).bool()
         if self.mode == "strict":
             mask = torch.logical_or(~t_mask, labels)
         else:
