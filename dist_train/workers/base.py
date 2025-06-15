@@ -400,7 +400,7 @@ class OnPolicyManager:
 
         self.eval_stats = {}
 
-        if bool(config["use_wandb"]):
+        if bool(config["use_wandb"]) and self.rank==0:
             self.stats_logger.run.watch(self.agent_model)
 
     @staticmethod

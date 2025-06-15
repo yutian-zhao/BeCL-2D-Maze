@@ -107,4 +107,5 @@ def synchronous_worker(rank, config, settings):
     for _ in range(int(settings.dur)): # NOTE: should be 50
          manager.do_epoch()
 
-    manager.stats_logger.run.finish()
+    if rank == 0:
+        manager.stats_logger.run.finish()
