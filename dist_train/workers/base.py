@@ -422,7 +422,7 @@ class OnPolicyManager:
         if self.aux_optim is not None:
             torch.save(self.aux_optim, self.aux_optim_path)
 
-        if self.settings.keep_checkpoints:
+        if self.settings.keep_checkpoints and self.curr_epoch%5==4: # CHANGE: Add checkpoint freq
             checkpoint_path = os.path.join(self.exp_dir, '{:04d}_model.pth.tar'.format(self.curr_epoch))
             self.agent_model.save_checkpoint(checkpoint_path)
 

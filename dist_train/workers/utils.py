@@ -180,21 +180,28 @@ class Logger(object):
         self._eval_mg = MetersGroup(log_dir / f'eval_{rank}.csv',
                                     formating=COMMON_FORMAT,
                                     use_wandb=use_wandb)
-        if use_tb:
-            from torch.utils.tensorboard import SummaryWriter
-            self._sw = SummaryWriter(str(log_dir / f'tb_{rank}'))
-        else:
-            self._sw = None
         self.use_wandb = use_wandb
-        if self.use_wandb:
-            dname = log_dir.parts[-1]
-            self.run = wandb.init(project="2d-maze", group=str(dname[:-9]), name=str(dname[-8:])+f'_{rank}')
+        
+        if self.rank == 0:
+            if use_tb:
+                from torch.utils.tensorboard import SummaryWriter
+                self._sw = SummaryWriter(str(log_dir / f'tb_{rank}'))
+            else:
+                self._sw = None
+            
+            if self.use_wandb:
+                dname = log_dir.parts[-1]
+                self.run = wandb.init(project="2d-maze", group=str(dname[:-9]), name=str(dname[-8:])+f'_{rank}')
 
     def _try_sw_log(self, key, value, step):
+        if self.rank != 0:
+            return
         if self._sw is not None:
             self._sw.add_scalar(key, value, step)
 
     def log(self, key, value, step):
+        if self.rank != 0:
+            return
         assert key.startswith('train') or key.startswith('eval')
         if type(value) == torch.Tensor:
             value = value.item()
@@ -203,16 +210,22 @@ class Logger(object):
         mg.log(key, value)
 
     def log_metrics(self, metrics, step, ty):
+        if self.rank != 0:
+            return
         for key, value in metrics.items():
             self.log(f'{ty}/{key}', value, step)
 
     def dump(self, step, ty=None):
+        if self.rank != 0:
+            return
         if ty is None or ty == 'eval':
             self._eval_mg.dump(step, 'eval')
         if ty is None or ty == 'train':
             self._train_mg.dump(step, 'train')
 
     def log_and_dump_ctx(self, step, ty):
+        if self.rank != 0:
+            return
         return LogAndDumpCtx(self, step, ty)
 
 
